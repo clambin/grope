@@ -1,0 +1,30 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDataSource
+metadata:
+  name: datasource-prometheus
+  namespace: monitoring
+spec:
+  allowCrossNamespaceImport: false
+  instanceSelector:
+    matchLabels:
+      dashboards: local-grafana
+  datasource:
+    id: 0
+    uid: ""
+    name: Prometheus
+    type: ""
+    typelogourl: ""
+    url: http://prometheus
+    access: ""
+    readonly: false
+    database: ""
+    user: ""
+    orgid: 0
+    isdefault: false
+    basicauth: false
+    basicauthuser: ""
+    withcredentials: false
+    jsondata: {}
+    securejsondata: {}
+    version: 0
