@@ -20,12 +20,24 @@ var (
 	dashboardsCmd = &cobra.Command{
 		Use:   "dashboards",
 		Short: "export Grafana dashboards",
-		RunE:  exportDashboards,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			exp, err := makeExporter(viper.GetViper(), charmer.GetLogger(cmd))
+			if err != nil {
+				return err
+			}
+			return exp.exportDashboards(os.Stdout)
+		},
 	}
 	dataSourcesCmd = &cobra.Command{
 		Use:   "datasources",
 		Short: "export Grafana data sources provisioning",
-		RunE:  ExportDataSources,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			exp, err := makeExporter(viper.GetViper(), charmer.GetLogger(cmd))
+			if err != nil {
+				return err
+			}
+			return exp.exportDataSources(os.Stdout)
+		},
 	}
 )
 
@@ -68,27 +80,10 @@ func initConfig() {
 		viper.SetConfigName("config")
 	}
 
-	viper.SetEnvPrefix("GRAFANA_EXPORTER")
+	viper.SetEnvPrefix("GROPE")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		slog.Warn("failed to read config file", "err", err)
 	}
-}
-
-func exportDashboards(cmd *cobra.Command, _ []string) error {
-	exp, err := makeExporter(viper.GetViper(), charmer.GetLogger(cmd))
-	if err != nil {
-		return err
-	}
-
-	return exp.exportDashboards(os.Stdout)
-}
-
-func ExportDataSources(cmd *cobra.Command, _ []string) error {
-	exp, err := makeExporter(viper.GetViper(), charmer.GetLogger(cmd))
-	if err != nil {
-		return err
-	}
-	return exp.exportDataSources(os.Stdout)
 }
