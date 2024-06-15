@@ -33,7 +33,7 @@ func makeExporter(v *viper.Viper, l *slog.Logger) (exporter, error) {
 	return exporter{
 		logger: l,
 		client: c,
-		formatter: OperatorFormatter{
+		formatter: Formatter{
 			Namespace:         stringOrDefault(v.GetString("namespace"), "default"),
 			GrafanaLabelName:  stringOrDefault(v.GetString("grafana.operator.label.name"), "dashboards"),
 			GrafanaLabelValue: stringOrDefault(v.GetString("grafana.operator.label.value"), "grafana"),

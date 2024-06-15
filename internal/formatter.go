@@ -11,14 +11,7 @@ import (
 	"io"
 )
 
-type Formatter interface {
-	FormatDashboard(w io.Writer, dashboard Dashboard) error
-	FormatDataSources(w io.Writer, sources []*gapi.DataSource) error
-}
-
-var _ Formatter = OperatorFormatter{}
-
-type OperatorFormatter struct {
+type Formatter struct {
 	Namespace         string
 	GrafanaLabelName  string
 	GrafanaLabelValue string
@@ -49,7 +42,7 @@ type instanceSelector struct {
 	MatchLabels map[string]string `yaml:"matchLabels"`
 }
 
-func (o OperatorFormatter) FormatDashboard(w io.Writer, dashboard Dashboard) error {
+func (f Formatter) FormatDashboard(w io.Writer, dashboard Dashboard) error {
 	var encodedDashboard bytes.Buffer
 	jEnc := json.NewEncoder(&encodedDashboard)
 	jEnc.SetIndent("", "  ")
@@ -62,13 +55,13 @@ func (o OperatorFormatter) FormatDashboard(w io.Writer, dashboard Dashboard) err
 		Kind:       "GrafanaDashboard",
 		Metadata: metadata{
 			Name:      slug.Make(dashboard.Title),
-			Namespace: o.Namespace,
+			Namespace: f.Namespace,
 		},
 		Spec: grafanaOperatorCustomResourceSpec{
 			AllowCrossNamespaceImport: true,
 			InstanceSelector: instanceSelector{
 				MatchLabels: map[string]string{
-					o.GrafanaLabelName: o.GrafanaLabelValue,
+					f.GrafanaLabelName: f.GrafanaLabelValue,
 				},
 			},
 			Folder: dashboard.Folder,
@@ -81,19 +74,19 @@ func (o OperatorFormatter) FormatDashboard(w io.Writer, dashboard Dashboard) err
 	return yEnc.Encode(dashboardCR)
 }
 
-func (o OperatorFormatter) FormatDataSources(w io.Writer, dataSources []*gapi.DataSource) error {
+func (f Formatter) FormatDataSources(w io.Writer, dataSources []*gapi.DataSource) error {
 	for _, dataSource := range dataSources {
 		cr := grafanaOperatorCustomResource{
 			APIVersion: grafanav1beta1.GroupVersion.String(),
 			Kind:       "GrafanaDataSource",
 			Metadata: metadata{
 				Name:      "datasource-" + slug.Make(dataSource.Name),
-				Namespace: o.Namespace,
+				Namespace: f.Namespace,
 			},
 			Spec: grafanaOperatorCustomResourceSpec{
 				InstanceSelector: instanceSelector{
 					MatchLabels: map[string]string{
-						o.GrafanaLabelName: o.GrafanaLabelValue,
+						f.GrafanaLabelName: f.GrafanaLabelValue,
 					},
 				},
 				DataSource: dataSource,
