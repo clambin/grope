@@ -51,9 +51,9 @@ type instanceSelector struct {
 
 func (o OperatorFormatter) FormatDashboard(w io.Writer, dashboard Dashboard) error {
 	var encodedDashboard bytes.Buffer
-	enc := json.NewEncoder(&encodedDashboard)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(dashboard.Model); err != nil {
+	jEnc := json.NewEncoder(&encodedDashboard)
+	jEnc.SetIndent("", "  ")
+	if err := jEnc.Encode(dashboard.Model); err != nil {
 		return fmt.Errorf("encode dashboard model: %w", err)
 	}
 

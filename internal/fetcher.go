@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"github.com/clambin/go-common/set"
 	gapi "github.com/grafana/grafana-api-golang-client"
 	"log/slog"
 )
@@ -24,8 +23,7 @@ type Dashboard struct {
 	Model  map[string]any
 }
 
-func FetchDashboards(c DashboardClient, logger *slog.Logger, folders ...string) (Dashboards, error) {
-	folderSet := set.New[string](folders...)
+func FetchDashboards(c DashboardClient, logger *slog.Logger, shouldExport func(dashboard gapi.FolderDashboardSearchResponse) bool) (Dashboards, error) {
 	foundBoards, err := c.Dashboards()
 	if err != nil {
 		return nil, fmt.Errorf("grafana search: %w", err)
@@ -33,31 +31,27 @@ func FetchDashboards(c DashboardClient, logger *slog.Logger, folders ...string) 
 
 	dashboards := make(Dashboards, 0, len(foundBoards))
 	for _, board := range foundBoards {
-		logger.Debug("dashboard found", "title", board.Title, "type", board.Type, "folder", board.FolderTitle)
+		logger.Debug("dashboard found",
+			slog.String("title", board.Title),
+			slog.String("type", board.Type),
+			slog.String("folder", board.FolderTitle),
+		)
 
 		// Only process dashboards, not folders
-		if board.Type != "dash-db" {
-			logger.Debug("invalid type in dashboard. ignoring", "type", board.Type)
-			continue
-		}
+		// Only export if the dashboard meets the criteria
+		if board.Type == "dash-db" && shouldExport(board) {
+			// Get the dashboard model
+			rawBoard, err := c.DashboardByUID(board.UID)
+			if err != nil {
+				return nil, fmt.Errorf("grafana get board: %w", err)
+			}
 
-		// Only export if the dashboard is in a specified folder
-		if len(folders) > 0 && !folderSet.Contains(board.FolderTitle) {
-			logger.Debug("folder not in scope. ignoring", "folderTitle", board.FolderTitle, "title", board.Title)
-			continue
+			dashboards = append(dashboards, Dashboard{
+				Folder: board.FolderTitle,
+				Title:  board.Title,
+				Model:  rawBoard.Model,
+			})
 		}
-
-		// Get the dashboard model
-		rawBoard, err := c.DashboardByUID(board.UID)
-		if err != nil {
-			return nil, fmt.Errorf("grafana get board: %w", err)
-		}
-
-		dashboards = append(dashboards, Dashboard{
-			Folder: board.FolderTitle,
-			Title:  board.Title,
-			Model:  rawBoard.Model,
-		})
 	}
 
 	return dashboards, nil

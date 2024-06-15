@@ -1,18 +1,19 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/clambin/go-common/charmer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log/slog"
 	"os"
+	"runtime/debug"
 )
 
 var (
 	configFilename string
 	RootCmd        = cobra.Command{
-		Use:   "grafana-exporter",
-		Short: "exports Grafana dashboards & datasources",
+		Use:   "grope",
+		Short: "exports Grafana dashboards & datasources as grafana-operator custom resources",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			charmer.SetTextLogger(cmd, viper.GetBool("debug"))
 		},
@@ -25,12 +26,12 @@ var (
 			if err != nil {
 				return err
 			}
-			return exp.exportDashboards(os.Stdout)
+			return exp.exportDashboards(os.Stdout, args...)
 		},
 	}
 	dataSourcesCmd = &cobra.Command{
 		Use:   "datasources",
-		Short: "export Grafana data sources provisioning",
+		Short: "export Grafana data sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			exp, err := makeExporter(viper.GetViper(), charmer.GetLogger(cmd))
 			if err != nil {
@@ -56,14 +57,16 @@ var args = charmer.Arguments{
 }
 
 func initArgs() {
-	//RootCmd.Version = version.BuildVersion
+	if buildInfo, ok := debug.ReadBuildInfo(); ok {
+		RootCmd.Version = buildInfo.Main.Version
+	}
 
 	RootCmd.PersistentFlags().StringVarP(&configFilename, "config", "c", "", "Configuration file")
 	if err := charmer.SetPersistentFlags(&RootCmd, viper.GetViper(), args); err != nil {
 		panic("failed to set flags: " + err.Error())
 	}
 
-	dashboardsCmd.Flags().StringP("folders", "f", "", "Dashboard folders to export")
+	dashboardsCmd.Flags().BoolP("folders", "f", false, "Export folder")
 	_ = viper.BindPFlag("folders", dashboardsCmd.Flags().Lookup("folders"))
 
 	RootCmd.AddCommand(dashboardsCmd)
@@ -84,6 +87,6 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		slog.Warn("failed to read config file", "err", err)
+		_, _ = fmt.Fprintf(os.Stderr, "failed to read config file: %s\n", err.Error())
 	}
 }

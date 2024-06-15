@@ -14,3 +14,19 @@ spec:
     {
       "foo": "bar"
     }
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: db-2
+  namespace: application
+spec:
+  allowCrossNamespaceImport: true
+  folder: folder 2
+  instanceSelector:
+    matchLabels:
+      dashboards: local-grafana
+  json: |
+    {
+      "foo": "bar"
+    }

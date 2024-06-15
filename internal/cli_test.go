@@ -21,21 +21,29 @@ func TestExportDashboards(t *testing.T) {
 	tests := []struct {
 		name   string
 		config func() *viper.Viper
+		args   []string
 	}{
 		{
 			name: "unfiltered",
 			config: func() *viper.Viper {
-				v := viper.New()
-				return v
+				return viper.New()
 			},
 		},
 		{
-			name: "filtered",
+			name: "filtered by name",
+			config: func() *viper.Viper {
+				return viper.New()
+			},
+			args: []string{"db 1"},
+		},
+		{
+			name: "filtered by folder",
 			config: func() *viper.Viper {
 				v := viper.New()
-				v.Set("folders", "folder 1")
+				v.Set("folders", true)
 				return v
 			},
+			args: []string{"folder 1"},
 		},
 		{
 			name: "override",
@@ -56,7 +64,7 @@ func TestExportDashboards(t *testing.T) {
 			exp.client = fakeClient{}
 
 			var buf bytes.Buffer
-			require.NoError(t, exp.exportDashboards(&buf))
+			require.NoError(t, exp.exportDashboards(&buf, tt.args...))
 
 			gp := filepath.Join("testdata", slug.Make(t.Name())+".yaml")
 			if *update {
