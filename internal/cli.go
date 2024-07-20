@@ -19,7 +19,7 @@ var (
 		},
 	}
 	dashboardsCmd = &cobra.Command{
-		Use:   "dashboards",
+		Use:   "dashboards [flags] [name [...]]",
 		Short: "export Grafana dashboards",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			exp, err := makeExporter(viper.GetViper(), charmer.GetLogger(cmd))
