@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	gapi "github.com/grafana/grafana-api-golang-client"
+	"iter"
 	"log/slog"
 )
 
@@ -30,25 +31,34 @@ func FetchDashboards(c DashboardClient, logger *slog.Logger, shouldExport func(g
 	}
 
 	dashboards := make(Dashboards, 0, len(foundBoards))
-	for _, board := range foundBoards {
+	for board := range dashboardsToExport(foundBoards, shouldExport) {
 		logger.Debug("dashboard found", "data", folderDashboard(board))
-
-		// Only process dashboards, not folders
-		// Only export if the dashboard meets the criteria
-		if board.Type == "dash-db" && shouldExport(board) {
-			rawBoard, err := c.DashboardByUID(board.UID)
-			if err != nil {
-				return nil, fmt.Errorf("grafana get board: %w", err)
-			}
-			dashboards = append(dashboards, Dashboard{
-				Folder: board.FolderTitle,
-				Title:  board.Title,
-				Model:  rawBoard.Model,
-			})
+		rawBoard, err := c.DashboardByUID(board.UID)
+		if err != nil {
+			return nil, fmt.Errorf("grafana get board: %w", err)
 		}
+		dashboards = append(dashboards, Dashboard{
+			Folder: board.FolderTitle,
+			Title:  board.Title,
+			Model:  rawBoard.Model,
+		})
 	}
 
 	return dashboards, nil
+}
+
+func dashboardsToExport(dashboards []gapi.FolderDashboardSearchResponse, shouldExport func(gapi.FolderDashboardSearchResponse) bool) iter.Seq[gapi.FolderDashboardSearchResponse] {
+	return func(yield func(gapi.FolderDashboardSearchResponse) bool) {
+		for _, board := range dashboards {
+			// Only process dashboards, not folders
+			// Only export if the dashboard meets the criteria
+			if board.Type == "dash-db" && shouldExport(board) {
+				if !yield(board) {
+					return
+				}
+			}
+		}
+	}
 }
 
 var _ slog.LogValuer = folderDashboard{}

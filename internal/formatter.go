@@ -9,6 +9,7 @@ import (
 	grafanav1beta1 "github.com/grafana/grafana-operator/v5/api/v1beta1"
 	"gopkg.in/yaml.v3"
 	"io"
+	"iter"
 )
 
 type Formatter struct {
@@ -75,23 +76,7 @@ func (f Formatter) FormatDashboard(w io.Writer, dashboard Dashboard) error {
 }
 
 func (f Formatter) FormatDataSources(w io.Writer, dataSources []*gapi.DataSource) error {
-	for _, dataSource := range dataSources {
-		cr := grafanaOperatorCustomResource{
-			APIVersion: grafanav1beta1.GroupVersion.String(),
-			Kind:       "GrafanaDataSource",
-			Metadata: metadata{
-				Name:      "datasource-" + slug.Make(dataSource.Name),
-				Namespace: f.Namespace,
-			},
-			Spec: grafanaOperatorCustomResourceSpec{
-				InstanceSelector: instanceSelector{
-					MatchLabels: map[string]string{
-						f.GrafanaLabelName: f.GrafanaLabelValue,
-					},
-				},
-				DataSource: dataSource,
-			},
-		}
+	for cr := range f.grafanaOperatorCustomResources(dataSources) {
 		_, _ = w.Write([]byte("---\n"))
 		yEnc := yaml.NewEncoder(w)
 		yEnc.SetIndent(2)
@@ -100,4 +85,30 @@ func (f Formatter) FormatDataSources(w io.Writer, dataSources []*gapi.DataSource
 		}
 	}
 	return nil
+}
+
+func (f Formatter) grafanaOperatorCustomResources(dataSources []*gapi.DataSource) iter.Seq[grafanaOperatorCustomResource] {
+	return func(yield func(grafanaOperatorCustomResource) bool) {
+		for _, dataSource := range dataSources {
+			cr := grafanaOperatorCustomResource{
+				APIVersion: grafanav1beta1.GroupVersion.String(),
+				Kind:       "GrafanaDataSource",
+				Metadata: metadata{
+					Name:      "datasource-" + slug.Make(dataSource.Name),
+					Namespace: f.Namespace,
+				},
+				Spec: grafanaOperatorCustomResourceSpec{
+					InstanceSelector: instanceSelector{
+						MatchLabels: map[string]string{
+							f.GrafanaLabelName: f.GrafanaLabelValue,
+						},
+					},
+					DataSource: dataSource,
+				},
+			}
+			if !yield(cr) {
+				return
+			}
+		}
+	}
 }
