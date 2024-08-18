@@ -2,18 +2,34 @@ package internal
 
 import (
 	"fmt"
-	gapi "github.com/grafana/grafana-api-golang-client"
+	"github.com/clambin/go-common/set"
+	"github.com/grafana/grafana-openapi-client-go/client/dashboards"
+	"github.com/grafana/grafana-openapi-client-go/client/datasources"
+	"github.com/grafana/grafana-openapi-client-go/client/search"
+	"github.com/grafana/grafana-openapi-client-go/models"
 	"iter"
 	"log/slog"
 )
 
-type DashboardClient interface {
-	Dashboards() ([]gapi.FolderDashboardSearchResponse, error)
-	DashboardByUID(uid string) (*gapi.Dashboard, error)
+type dashboardClient struct {
+	searcher
+	dashboardFetcher
 }
 
-type DataSourcesClient interface {
-	DataSources() ([]*gapi.DataSource, error)
+type searcher interface {
+	Search(*search.SearchParams, ...search.ClientOption) (*search.SearchOK, error)
+}
+
+type dashboardFetcher interface {
+	GetDashboardByUID(string, ...dashboards.ClientOption) (*dashboards.GetDashboardByUIDOK, error)
+}
+
+type dataSourcesClient struct {
+	dataSourceFetcher
+}
+
+type dataSourceFetcher interface {
+	GetDataSources(opts ...datasources.ClientOption) (*datasources.GetDataSourcesOK, error)
 }
 
 type Dashboards []Dashboard
@@ -21,53 +37,70 @@ type Dashboards []Dashboard
 type Dashboard struct {
 	Folder string
 	Title  string
-	Model  map[string]any
+	Model  models.JSON
 }
 
-func FetchDashboards(c DashboardClient, logger *slog.Logger, shouldExport func(gapi.FolderDashboardSearchResponse) bool) (Dashboards, error) {
-	foundBoards, err := c.Dashboards()
-	if err != nil {
-		return nil, fmt.Errorf("grafana search: %w", err)
-	}
-
-	dashboards := make(Dashboards, 0, len(foundBoards))
-	for board := range dashboardsToExport(foundBoards, shouldExport) {
-		logger.Debug("dashboard found", "data", folderDashboard(board))
-		rawBoard, err := c.DashboardByUID(board.UID)
+func yieldDashboards(c dashboardClient, folders bool, args ...string) iter.Seq2[Dashboard, error] {
+	f := shouldExport(folders, args...)
+	return func(yield func(Dashboard, error) bool) {
+		ok, err := c.Search(nil)
 		if err != nil {
-			return nil, fmt.Errorf("grafana get board: %w", err)
+			yield(Dashboard{}, err)
+			return
 		}
-		dashboards = append(dashboards, Dashboard{
-			Folder: board.FolderTitle,
-			Title:  board.Title,
-			Model:  rawBoard.Model,
-		})
-	}
+		if !ok.IsSuccess() {
+			yield(Dashboard{}, fmt.Errorf("search: %s", ok.Error()))
+			return
+		}
 
-	return dashboards, nil
-}
+		for _, entry := range ok.GetPayload() {
+			if entry.Type != "dash-db" || !f(entry) {
+				continue
+			}
 
-func dashboardsToExport(dashboards []gapi.FolderDashboardSearchResponse, shouldExport func(gapi.FolderDashboardSearchResponse) bool) iter.Seq[gapi.FolderDashboardSearchResponse] {
-	return func(yield func(gapi.FolderDashboardSearchResponse) bool) {
-		for _, board := range dashboards {
-			// Only process dashboards, not folders
-			// Only export if the dashboard meets the criteria
-			if board.Type == "dash-db" && shouldExport(board) {
-				if !yield(board) {
-					return
-				}
+			db, err := c.GetDashboardByUID(entry.UID)
+			if err != nil {
+				yield(Dashboard{}, fmt.Errorf("dash-db lookup for %q: %w", entry.Title, err))
+				return
+			}
+			if !yield(Dashboard{Title: entry.Title, Folder: entry.FolderTitle, Model: db.GetPayload().Dashboard}, nil) {
+				return
 			}
 		}
 	}
 }
 
+func shouldExport(folders bool, args ...string) func(*models.Hit) bool {
+	validNames := set.New(args...)
+	return func(hit *models.Hit) bool {
+		if len(args) == 0 {
+			return true
+		}
+		if folders {
+			return validNames.Contains(hit.FolderTitle)
+		}
+		return validNames.Contains(hit.Title)
+	}
+}
+
+func getDataSources(c dataSourcesClient) (models.DataSourceList, error) {
+	ok, err := c.GetDataSources()
+	if err != nil {
+		return nil, fmt.Errorf("getDatasources: %w", err)
+	}
+	if !ok.IsSuccess() {
+		return nil, fmt.Errorf("getDataSources: %s", ok.Error())
+	}
+	return ok.GetPayload(), nil
+}
+
 var _ slog.LogValuer = folderDashboard{}
 
-type folderDashboard gapi.FolderDashboardSearchResponse
+type folderDashboard models.Hit
 
 func (d folderDashboard) LogValue() slog.Value {
 	return slog.GroupValue(slog.String("title", d.Title),
-		slog.String("type", d.Type),
+		slog.String("type", string(d.Type)),
 		slog.String("folder", d.FolderTitle),
 	)
 }

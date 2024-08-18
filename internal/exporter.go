@@ -2,37 +2,49 @@ package internal
 
 import (
 	"fmt"
-	"github.com/clambin/go-common/set"
-	gapi "github.com/grafana/grafana-api-golang-client"
+	"github.com/go-openapi/strfmt"
+	goapi "github.com/grafana/grafana-openapi-client-go/client"
 	"github.com/spf13/viper"
 	"io"
 	"log/slog"
-	"net/http"
+	"net/url"
 )
 
 type exporter struct {
 	logger    *slog.Logger
-	client    Fetcher
+	client    goAPIClient
 	formatter Formatter
 	folders   bool
 }
 
-type Fetcher interface {
-	DashboardClient
-	DataSourcesClient
+type goAPIClient struct {
+	dashboardClient
+	dataSourcesClient
 }
 
 func makeExporter(v *viper.Viper, l *slog.Logger) (exporter, error) {
-	c, err := gapi.New(v.GetString("grafana.url"), gapi.Config{
-		APIKey: v.GetString("grafana.token"),
-		Client: http.DefaultClient,
-	})
+	target, err := url.Parse(v.GetString("grafana.url"))
 	if err != nil {
-		return exporter{}, fmt.Errorf("grafana connect: %w", err)
+		return exporter{}, fmt.Errorf("grafana.url invalid: %w", err)
 	}
+	cfg := goapi.TransportConfig{
+		Host:     target.Host,
+		BasePath: "/api",
+		Schemes:  []string{target.Scheme},
+		APIKey:   v.GetString("grafana.token"),
+	}
+	c := goapi.NewHTTPClientWithConfig(strfmt.Default, &cfg)
 	return exporter{
 		logger: l,
-		client: c,
+		client: goAPIClient{
+			dashboardClient: dashboardClient{
+				searcher:         c.Search,
+				dashboardFetcher: c.Dashboards,
+			},
+			dataSourcesClient: dataSourcesClient{
+				dataSourceFetcher: c.Datasources,
+			},
+		},
 		formatter: Formatter{
 			Namespace:         stringOrDefault(v.GetString("namespace"), "default"),
 			GrafanaLabelName:  stringOrDefault(v.GetString("grafana.operator.label.name"), "dashboards"),
@@ -50,32 +62,19 @@ func stringOrDefault(s, defaultString string) string {
 }
 
 func (e exporter) exportDashboards(w io.Writer, args ...string) error {
-	dashboards, err := FetchDashboards(e.client, e.logger, e.shouldExport(args...))
-	if err == nil {
-		for _, dashboard := range dashboards {
-			if err = e.formatter.FormatDashboard(w, dashboard); err != nil {
-				return fmt.Errorf("format dashboard %q: %w", dashboard.Title, err)
-			}
+	for dashboard, err := range yieldDashboards(e.client.dashboardClient, e.folders, args...) {
+		if err != nil {
+			return fmt.Errorf("error fetching dashboard %s: %w", dashboard, err)
+		}
+		if err = e.formatter.FormatDashboard(w, dashboard); err != nil {
+			return fmt.Errorf("error formating dashboard %q: %w", dashboard.Title, err)
 		}
 	}
-	return err
-}
-
-func (e exporter) shouldExport(args ...string) func(gapi.FolderDashboardSearchResponse) bool {
-	validNames := set.New(args...)
-	return func(dashboard gapi.FolderDashboardSearchResponse) bool {
-		if len(args) == 0 {
-			return true
-		}
-		if e.folders {
-			return validNames.Contains(dashboard.FolderTitle)
-		}
-		return validNames.Contains(dashboard.Title)
-	}
+	return nil
 }
 
 func (e exporter) exportDataSources(w io.Writer) error {
-	sources, err := e.client.DataSources()
+	sources, err := getDataSources(e.client.dataSourcesClient)
 	if err == nil {
 		err = e.formatter.FormatDataSources(w, sources)
 	}

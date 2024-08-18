@@ -5,7 +5,10 @@ import (
 	"errors"
 	"flag"
 	"github.com/gosimple/slug"
-	gapi "github.com/grafana/grafana-api-golang-client"
+	"github.com/grafana/grafana-openapi-client-go/client/dashboards"
+	"github.com/grafana/grafana-openapi-client-go/client/datasources"
+	"github.com/grafana/grafana-openapi-client-go/client/search"
+	"github.com/grafana/grafana-openapi-client-go/models"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,17 +27,13 @@ func TestExportDashboards(t *testing.T) {
 		args   []string
 	}{
 		{
-			name: "unfiltered",
-			config: func() *viper.Viper {
-				return viper.New()
-			},
+			name:   "unfiltered",
+			config: viper.New,
 		},
 		{
-			name: "filtered by name",
-			config: func() *viper.Viper {
-				return viper.New()
-			},
-			args: []string{"db 1"},
+			name:   "filtered by name",
+			config: viper.New,
+			args:   []string{"db 1"},
 		},
 		{
 			name: "filtered by folder",
@@ -59,9 +58,21 @@ func TestExportDashboards(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			exp, err := makeExporter(tt.config(), slog.Default())
 			require.NoError(t, err)
-			exp.client = fakeClient{}
+			exp.client.dashboardClient.searcher = fakeSearcher{
+				hitList: models.HitList{
+					{Title: "db 1", FolderTitle: "folder 1", Type: "dash-db", UID: "1"},
+					{Title: "db 2", FolderTitle: "folder 2", Type: "dash-db", UID: "2"},
+				},
+			}
+			exp.client.dashboardClient.dashboardFetcher = fakeDashboardFetcher{
+				dashboards: map[string]any{
+					"1": map[string]string{"foo": "bar"},
+					"2": map[string]string{"foo": "bar"},
+				},
+			}
 
 			var buf bytes.Buffer
 			require.NoError(t, exp.exportDashboards(&buf, tt.args...))
@@ -84,7 +95,11 @@ func TestExportDataSources(t *testing.T) {
 
 	exp, err := makeExporter(v, slog.Default())
 	require.NoError(t, err)
-	exp.client = fakeClient{}
+	exp.client.dataSourcesClient.dataSourceFetcher = fakeDataSourceFetcher{
+		dataSources: models.DataSourceList{
+			{ID: 0, Name: "prometheus", Type: "prometheus", URL: "http://prometheus"},
+		},
+	}
 	var buf bytes.Buffer
 	require.NoError(t, exp.exportDataSources(&buf))
 
@@ -97,31 +112,54 @@ func TestExportDataSources(t *testing.T) {
 	assert.Equal(t, string(golden), buf.String())
 }
 
-var _ Fetcher = fakeClient{}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-type fakeClient struct{}
+var _ searcher = fakeSearcher{}
 
-func (f fakeClient) Dashboards() ([]gapi.FolderDashboardSearchResponse, error) {
-	return []gapi.FolderDashboardSearchResponse{
-		{UID: "1", Type: "dash-db", FolderTitle: "folder 1", Title: "db 1"},
-		{UID: "2", Type: "dash-db", FolderTitle: "folder 2", Title: "db 2"},
-	}, nil
+type fakeSearcher struct {
+	hitList models.HitList
+	err     error
 }
 
-func (f fakeClient) DashboardByUID(uid string) (*gapi.Dashboard, error) {
-	switch uid {
-	case "1", "2":
-		return &gapi.Dashboard{Model: map[string]interface{}{"foo": "bar"}}, nil
-	default:
+func (f fakeSearcher) Search(_ *search.SearchParams, _ ...search.ClientOption) (*search.SearchOK, error) {
+	var result *search.SearchOK
+	if f.err == nil {
+		result = search.NewSearchOK()
+		result.Payload = f.hitList
+	}
+	return result, f.err
+}
+
+var _ dashboardFetcher = fakeDashboardFetcher{}
+
+type fakeDashboardFetcher struct {
+	dashboards map[string]any
+}
+
+func (f fakeDashboardFetcher) GetDashboardByUID(dashboardUID string, _ ...dashboards.ClientOption) (*dashboards.GetDashboardByUIDOK, error) {
+	db, ok := f.dashboards[dashboardUID]
+	if !ok {
 		return nil, errors.New("dashboard not found")
 	}
+	result := dashboards.NewGetDashboardByUIDOK()
+	result.Payload = &models.DashboardFullWithMeta{
+		Dashboard: db,
+	}
+	return result, nil
 }
 
-func (f fakeClient) DataSources() ([]*gapi.DataSource, error) {
-	return []*gapi.DataSource{
-		{
-			Name: "Prometheus",
-			URL:  "http://prometheus",
-		},
-	}, nil
+var _ dataSourceFetcher = &fakeDataSourceFetcher{}
+
+type fakeDataSourceFetcher struct {
+	err         error
+	dataSources models.DataSourceList
+}
+
+func (f fakeDataSourceFetcher) GetDataSources(_ ...datasources.ClientOption) (*datasources.GetDataSourcesOK, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	ok := datasources.NewGetDataSourcesOK()
+	ok.Payload = f.dataSources
+	return ok, nil
 }

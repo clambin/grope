@@ -10,21 +10,18 @@ spec:
     matchLabels:
       dashboards: local-grafana
   datasource:
-    id: 0
-    uid: ""
-    name: Prometheus
-    type: ""
-    typelogourl: ""
-    url: http://prometheus
     access: ""
-    readonly: false
-    database: ""
-    user: ""
-    orgid: 0
-    isdefault: false
     basicauth: false
-    basicauthuser: ""
-    withcredentials: false
-    jsondata: {}
-    securejsondata: {}
-    version: 0
+    database: ""
+    id: 0
+    isdefault: false
+    jsondata: null
+    name: prometheus
+    orgid: 0
+    readonly: false
+    type: prometheus
+    typelogourl: ""
+    typename: ""
+    uid: ""
+    url: http://prometheus
+    user: ""

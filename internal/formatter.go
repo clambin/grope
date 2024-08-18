@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gosimple/slug"
-	gapi "github.com/grafana/grafana-api-golang-client"
+	"github.com/grafana/grafana-openapi-client-go/models"
 	grafanav1beta1 "github.com/grafana/grafana-operator/v5/api/v1beta1"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -32,11 +32,11 @@ type metadata struct {
 }
 
 type grafanaOperatorCustomResourceSpec struct {
-	AllowCrossNamespaceImport bool             `yaml:"allowCrossNamespaceImport"`
-	Folder                    string           `yaml:"folder,omitempty"`
-	InstanceSelector          instanceSelector `yaml:"instanceSelector"`
-	Json                      string           `yaml:"json,omitempty"`
-	DataSource                *gapi.DataSource `yaml:"datasource,omitempty"`
+	AllowCrossNamespaceImport bool                          `yaml:"allowCrossNamespaceImport"`
+	Folder                    string                        `yaml:"folder,omitempty"`
+	InstanceSelector          instanceSelector              `yaml:"instanceSelector"`
+	Json                      string                        `yaml:"json,omitempty"`
+	DataSource                *models.DataSourceListItemDTO `yaml:"datasource,omitempty"`
 }
 
 type instanceSelector struct {
@@ -75,7 +75,7 @@ func (f Formatter) FormatDashboard(w io.Writer, dashboard Dashboard) error {
 	return yEnc.Encode(dashboardCR)
 }
 
-func (f Formatter) FormatDataSources(w io.Writer, dataSources []*gapi.DataSource) error {
+func (f Formatter) FormatDataSources(w io.Writer, dataSources []*models.DataSourceListItemDTO) error {
 	for cr := range f.grafanaOperatorCustomResources(dataSources) {
 		_, _ = w.Write([]byte("---\n"))
 		yEnc := yaml.NewEncoder(w)
@@ -87,7 +87,7 @@ func (f Formatter) FormatDataSources(w io.Writer, dataSources []*gapi.DataSource
 	return nil
 }
 
-func (f Formatter) grafanaOperatorCustomResources(dataSources []*gapi.DataSource) iter.Seq[grafanaOperatorCustomResource] {
+func (f Formatter) grafanaOperatorCustomResources(dataSources []*models.DataSourceListItemDTO) iter.Seq[grafanaOperatorCustomResource] {
 	return func(yield func(grafanaOperatorCustomResource) bool) {
 		for _, dataSource := range dataSources {
 			cr := grafanaOperatorCustomResource{
