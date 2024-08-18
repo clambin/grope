@@ -12,12 +12,12 @@ import (
 
 type exporter struct {
 	logger    *slog.Logger
-	client    goAPIClient
+	client    grafanaClient
 	formatter Formatter
 	folders   bool
 }
 
-type goAPIClient struct {
+type grafanaClient struct {
 	dashboardClient
 	dataSourcesClient
 }
@@ -36,7 +36,7 @@ func makeExporter(v *viper.Viper, l *slog.Logger) (exporter, error) {
 	c := goapi.NewHTTPClientWithConfig(strfmt.Default, &cfg)
 	return exporter{
 		logger: l,
-		client: goAPIClient{
+		client: grafanaClient{
 			dashboardClient: dashboardClient{
 				searcher:         c.Search,
 				dashboardFetcher: c.Dashboards,
