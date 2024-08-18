@@ -64,7 +64,7 @@ func stringOrDefault(s, defaultString string) string {
 func (e exporter) exportDashboards(w io.Writer, args ...string) error {
 	for dashboard, err := range yieldDashboards(e.client.dashboardClient, e.folders, args...) {
 		if err != nil {
-			return fmt.Errorf("error fetching dashboard %s: %w", dashboard, err)
+			return fmt.Errorf("error fetching dashboard: %w", err)
 		}
 		if err = e.formatter.FormatDashboard(w, dashboard); err != nil {
 			return fmt.Errorf("error formating dashboard %q: %w", dashboard.Title, err)
