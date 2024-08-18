@@ -5,7 +5,6 @@ go 1.23
 require (
 	github.com/clambin/go-common/charmer v0.2.0
 	github.com/clambin/go-common/set v0.4.3
-	github.com/clambin/go-common/testutils v0.1.0
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/gosimple/slug v1.14.0
 	github.com/grafana/grafana-openapi-client-go v0.0.0-20240723170622-ae2c94b7c9a3
