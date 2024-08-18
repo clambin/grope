@@ -62,10 +62,7 @@ func initArgs() {
 	}
 
 	RootCmd.PersistentFlags().StringVarP(&configFilename, "config", "c", "", "Configuration file")
-	if err := charmer.SetPersistentFlags(&RootCmd, viper.GetViper(), args); err != nil {
-		panic("failed to set flags: " + err.Error())
-	}
-
+	_ = charmer.SetPersistentFlags(&RootCmd, viper.GetViper(), args)
 	dashboardsCmd.Flags().BoolP("folders", "f", false, "Export folder")
 	_ = viper.BindPFlag("folders", dashboardsCmd.Flags().Lookup("folders"))
 
@@ -74,19 +71,23 @@ func initArgs() {
 }
 
 func initConfig() {
+	initViper(viper.GetViper())
+}
+
+func initViper(v *viper.Viper) {
 	if configFilename != "" {
-		viper.SetConfigFile(configFilename)
+		v.SetConfigFile(configFilename)
 	} else {
-		viper.AddConfigPath("/etc/grope/")
-		viper.AddConfigPath("$HOME/.grope")
-		viper.AddConfigPath(".")
-		viper.SetConfigName("config")
+		v.AddConfigPath("/etc/grope/")
+		v.AddConfigPath("$HOME/.grope")
+		v.AddConfigPath(".")
+		v.SetConfigName("config")
 	}
 
-	viper.SetEnvPrefix("GROPE")
-	viper.AutomaticEnv()
+	v.SetEnvPrefix("GROPE")
+	v.AutomaticEnv()
 
-	if err := viper.ReadInConfig(); err != nil {
+	if err := v.ReadInConfig(); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to read config file: %s\n", err.Error())
 	}
 }
