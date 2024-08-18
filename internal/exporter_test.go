@@ -22,44 +22,82 @@ var update = flag.Bool("update", false, "update golden files")
 
 func TestExportDashboards(t *testing.T) {
 	tests := []struct {
-		name   string
-		config func() *viper.Viper
-		args   []string
+		name    string
+		config  func() *viper.Viper
+		args    []string
+		wantErr assert.ErrorAssertionFunc
 	}{
 		{
-			name:   "unfiltered",
-			config: viper.New,
+			name: "unfiltered",
+			config: func() *viper.Viper {
+				v := viper.New()
+				v.Set("grafana.url", "http://grafana")
+				return v
+			},
+			wantErr: assert.NoError,
 		},
 		{
-			name:   "filtered by name",
-			config: viper.New,
-			args:   []string{"db 1"},
+			name: "filtered by name",
+			config: func() *viper.Viper {
+				v := viper.New()
+				v.Set("grafana.url", "http://grafana")
+				return v
+			},
+			args:    []string{"db 1"},
+			wantErr: assert.NoError,
 		},
 		{
 			name: "filtered by folder",
 			config: func() *viper.Viper {
 				v := viper.New()
+				v.Set("grafana.url", "http://grafana")
 				v.Set("folders", true)
 				return v
 			},
-			args: []string{"folder 1"},
+			args:    []string{"folder 1"},
+			wantErr: assert.NoError,
 		},
 		{
 			name: "override",
 			config: func() *viper.Viper {
 				v := viper.New()
+				v.Set("grafana.url", "http://grafana")
 				v.Set("namespace", "application")
 				v.Set("grafana.operator.label.value", "local-grafana")
 				v.Set("folders", "folder 1")
 				return v
 			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "invalid url",
+			config: func() *viper.Viper {
+				v := viper.New()
+				v.Set("grafana.url", "")
+				return v
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "url missing scheme",
+			config: func() *viper.Viper {
+				v := viper.New()
+				v.Set("grafana.url", "grafana.localdomain")
+				return v
+			},
+			wantErr: assert.Error,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exp, err := makeExporter(tt.config(), slog.Default())
-			require.NoError(t, err)
+			tt.wantErr(t, err)
+
+			if err != nil {
+				return
+			}
+
 			exp.client.dashboardClient.searcher = fakeSearcher{
 				hitList: models.HitList{
 					{Title: "db 1", FolderTitle: "folder 1", Type: "dash-db", UID: "1"},
@@ -91,6 +129,7 @@ func TestExportDataSources(t *testing.T) {
 	v := viper.New()
 	v.Set("namespace", "monitoring")
 	v.Set("grafana.operator.label.value", "local-grafana")
+	v.Set("grafana.url", "http://grafana")
 
 	exp, err := makeExporter(v, slog.Default())
 	require.NoError(t, err)

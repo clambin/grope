@@ -44,6 +44,9 @@ func newGrafanaClient(grafanaURL, apiKey string) (*grafanaClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("grafana.url invalid: %w", err)
 	}
+	if target.Scheme == "" {
+		return nil, fmt.Errorf("grafana.url scheme invalid: %s", grafanaURL)
+	}
 	cfg := goapi.TransportConfig{
 		Host:     target.Host,
 		BasePath: "/api",
