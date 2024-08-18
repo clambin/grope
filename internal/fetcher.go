@@ -8,7 +8,6 @@ import (
 	"github.com/grafana/grafana-openapi-client-go/client/search"
 	"github.com/grafana/grafana-openapi-client-go/models"
 	"iter"
-	"log/slog"
 )
 
 type dashboardClient struct {
@@ -48,16 +47,10 @@ func yieldDashboards(c dashboardClient, folders bool, args ...string) iter.Seq2[
 			yield(Dashboard{}, err)
 			return
 		}
-		if !ok.IsSuccess() {
-			yield(Dashboard{}, fmt.Errorf("search: %s", ok.Error()))
-			return
-		}
-
 		for _, entry := range ok.GetPayload() {
 			if entry.Type != "dash-db" || !f(entry) {
 				continue
 			}
-
 			db, err := c.GetDashboardByUID(entry.UID)
 			if err != nil {
 				yield(Dashboard{}, fmt.Errorf("dash-db lookup for %q: %w", entry.Title, err))
@@ -88,19 +81,5 @@ func getDataSources(c dataSourcesClient) (models.DataSourceList, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getDatasources: %w", err)
 	}
-	if !ok.IsSuccess() {
-		return nil, fmt.Errorf("getDataSources: %s", ok.Error())
-	}
 	return ok.GetPayload(), nil
-}
-
-var _ slog.LogValuer = folderDashboard{}
-
-type folderDashboard models.Hit
-
-func (d folderDashboard) LogValue() slog.Value {
-	return slog.GroupValue(slog.String("title", d.Title),
-		slog.String("type", string(d.Type)),
-		slog.String("folder", d.FolderTitle),
-	)
 }

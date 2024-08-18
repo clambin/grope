@@ -132,10 +132,14 @@ func (f fakeSearcher) Search(_ *search.SearchParams, _ ...search.ClientOption) (
 var _ dashboardFetcher = fakeDashboardFetcher{}
 
 type fakeDashboardFetcher struct {
+	err        error
 	dashboards map[string]any
 }
 
 func (f fakeDashboardFetcher) GetDashboardByUID(dashboardUID string, _ ...dashboards.ClientOption) (*dashboards.GetDashboardByUIDOK, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
 	db, ok := f.dashboards[dashboardUID]
 	if !ok {
 		return nil, errors.New("dashboard not found")

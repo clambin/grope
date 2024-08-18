@@ -12,8 +12,8 @@ import (
 
 type exporter struct {
 	logger    *slog.Logger
-	client    grafanaClient
-	formatter Formatter
+	client    *grafanaClient
+	formatter formatter
 	folders   bool
 }
 
@@ -22,35 +22,43 @@ type grafanaClient struct {
 	dataSourcesClient
 }
 
-func makeExporter(v *viper.Viper, l *slog.Logger) (exporter, error) {
-	target, err := url.Parse(v.GetString("grafana.url"))
+func makeExporter(v *viper.Viper, l *slog.Logger) (*exporter, error) {
+	client, err := newGrafanaClient(v.GetString("grafana.url"), v.GetString("grafana.token"))
 	if err != nil {
-		return exporter{}, fmt.Errorf("grafana.url invalid: %w", err)
+		return nil, err
+	}
+	return &exporter{
+		logger: l,
+		client: client,
+		formatter: formatter{
+			namespace:         stringOrDefault(v.GetString("namespace"), "default"),
+			grafanaLabelName:  stringOrDefault(v.GetString("grafana.operator.label.name"), "dashboards"),
+			grafanaLabelValue: stringOrDefault(v.GetString("grafana.operator.label.value"), "grafana"),
+		},
+		folders: v.GetBool("folders"),
+	}, nil
+}
+
+func newGrafanaClient(grafanaURL, apiKey string) (*grafanaClient, error) {
+	target, err := url.Parse(grafanaURL)
+	if err != nil {
+		return nil, fmt.Errorf("grafana.url invalid: %w", err)
 	}
 	cfg := goapi.TransportConfig{
 		Host:     target.Host,
 		BasePath: "/api",
 		Schemes:  []string{target.Scheme},
-		APIKey:   v.GetString("grafana.token"),
+		APIKey:   apiKey,
 	}
 	c := goapi.NewHTTPClientWithConfig(strfmt.Default, &cfg)
-	return exporter{
-		logger: l,
-		client: grafanaClient{
-			dashboardClient: dashboardClient{
-				searcher:         c.Search,
-				dashboardFetcher: c.Dashboards,
-			},
-			dataSourcesClient: dataSourcesClient{
-				dataSourceFetcher: c.Datasources,
-			},
+	return &grafanaClient{
+		dashboardClient: dashboardClient{
+			searcher:         c.Search,
+			dashboardFetcher: c.Dashboards,
 		},
-		formatter: Formatter{
-			Namespace:         stringOrDefault(v.GetString("namespace"), "default"),
-			GrafanaLabelName:  stringOrDefault(v.GetString("grafana.operator.label.name"), "dashboards"),
-			GrafanaLabelValue: stringOrDefault(v.GetString("grafana.operator.label.value"), "grafana"),
+		dataSourcesClient: dataSourcesClient{
+			dataSourceFetcher: c.Datasources,
 		},
-		folders: v.GetBool("folders"),
 	}, nil
 }
 
@@ -66,7 +74,7 @@ func (e exporter) exportDashboards(w io.Writer, args ...string) error {
 		if err != nil {
 			return fmt.Errorf("error fetching dashboard: %w", err)
 		}
-		if err = e.formatter.FormatDashboard(w, dashboard); err != nil {
+		if err = e.formatter.formatDashboard(w, dashboard); err != nil {
 			return fmt.Errorf("error formating dashboard %q: %w", dashboard.Title, err)
 		}
 	}
@@ -76,7 +84,7 @@ func (e exporter) exportDashboards(w io.Writer, args ...string) error {
 func (e exporter) exportDataSources(w io.Writer) error {
 	sources, err := getDataSources(e.client.dataSourcesClient)
 	if err == nil {
-		err = e.formatter.FormatDataSources(w, sources)
+		err = e.formatter.formatDataSources(w, sources)
 	}
 	return err
 }
