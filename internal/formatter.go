@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gosimple/slug"
-	gapi "github.com/grafana/grafana-api-golang-client"
+	"github.com/grafana/grafana-openapi-client-go/models"
 	grafanav1beta1 "github.com/grafana/grafana-operator/v5/api/v1beta1"
 	"gopkg.in/yaml.v3"
 	"io"
 	"iter"
 )
 
-type Formatter struct {
-	Namespace         string
-	GrafanaLabelName  string
-	GrafanaLabelValue string
+type formatter struct {
+	namespace         string
+	grafanaLabelName  string
+	grafanaLabelValue string
 }
 
 // grafanaOperatorCustomResource mimics a grafana-operator GrafanaDashboard, but leaves out the Status section
@@ -32,18 +32,18 @@ type metadata struct {
 }
 
 type grafanaOperatorCustomResourceSpec struct {
-	AllowCrossNamespaceImport bool             `yaml:"allowCrossNamespaceImport"`
-	Folder                    string           `yaml:"folder,omitempty"`
-	InstanceSelector          instanceSelector `yaml:"instanceSelector"`
-	Json                      string           `yaml:"json,omitempty"`
-	DataSource                *gapi.DataSource `yaml:"datasource,omitempty"`
+	AllowCrossNamespaceImport bool                          `yaml:"allowCrossNamespaceImport"`
+	Folder                    string                        `yaml:"folder,omitempty"`
+	InstanceSelector          instanceSelector              `yaml:"instanceSelector"`
+	Json                      string                        `yaml:"json,omitempty"`
+	DataSource                *models.DataSourceListItemDTO `yaml:"datasource,omitempty"`
 }
 
 type instanceSelector struct {
 	MatchLabels map[string]string `yaml:"matchLabels"`
 }
 
-func (f Formatter) FormatDashboard(w io.Writer, dashboard Dashboard) error {
+func (f formatter) formatDashboard(w io.Writer, dashboard Dashboard) error {
 	var encodedDashboard bytes.Buffer
 	jEnc := json.NewEncoder(&encodedDashboard)
 	jEnc.SetIndent("", "  ")
@@ -56,13 +56,13 @@ func (f Formatter) FormatDashboard(w io.Writer, dashboard Dashboard) error {
 		Kind:       "GrafanaDashboard",
 		Metadata: metadata{
 			Name:      slug.Make(dashboard.Title),
-			Namespace: f.Namespace,
+			Namespace: f.namespace,
 		},
 		Spec: grafanaOperatorCustomResourceSpec{
 			AllowCrossNamespaceImport: true,
 			InstanceSelector: instanceSelector{
 				MatchLabels: map[string]string{
-					f.GrafanaLabelName: f.GrafanaLabelValue,
+					f.grafanaLabelName: f.grafanaLabelValue,
 				},
 			},
 			Folder: dashboard.Folder,
@@ -75,7 +75,7 @@ func (f Formatter) FormatDashboard(w io.Writer, dashboard Dashboard) error {
 	return yEnc.Encode(dashboardCR)
 }
 
-func (f Formatter) FormatDataSources(w io.Writer, dataSources []*gapi.DataSource) error {
+func (f formatter) formatDataSources(w io.Writer, dataSources []*models.DataSourceListItemDTO) error {
 	for cr := range f.grafanaOperatorCustomResources(dataSources) {
 		_, _ = w.Write([]byte("---\n"))
 		yEnc := yaml.NewEncoder(w)
@@ -87,7 +87,7 @@ func (f Formatter) FormatDataSources(w io.Writer, dataSources []*gapi.DataSource
 	return nil
 }
 
-func (f Formatter) grafanaOperatorCustomResources(dataSources []*gapi.DataSource) iter.Seq[grafanaOperatorCustomResource] {
+func (f formatter) grafanaOperatorCustomResources(dataSources []*models.DataSourceListItemDTO) iter.Seq[grafanaOperatorCustomResource] {
 	return func(yield func(grafanaOperatorCustomResource) bool) {
 		for _, dataSource := range dataSources {
 			cr := grafanaOperatorCustomResource{
@@ -95,12 +95,12 @@ func (f Formatter) grafanaOperatorCustomResources(dataSources []*gapi.DataSource
 				Kind:       "GrafanaDataSource",
 				Metadata: metadata{
 					Name:      "datasource-" + slug.Make(dataSource.Name),
-					Namespace: f.Namespace,
+					Namespace: f.namespace,
 				},
 				Spec: grafanaOperatorCustomResourceSpec{
 					InstanceSelector: instanceSelector{
 						MatchLabels: map[string]string{
-							f.GrafanaLabelName: f.GrafanaLabelValue,
+							f.grafanaLabelName: f.grafanaLabelValue,
 						},
 					},
 					DataSource: dataSource,

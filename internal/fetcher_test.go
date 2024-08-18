@@ -1,20 +1,104 @@
 package internal
 
 import (
-	"bytes"
-	"github.com/clambin/go-common/testutils"
-	gapi "github.com/grafana/grafana-api-golang-client"
+	"errors"
+	"github.com/grafana/grafana-openapi-client-go/models"
 	"github.com/stretchr/testify/assert"
-	"log/slog"
 	"testing"
 )
 
-func Test_folderDashboard_LogValue(t *testing.T) {
-	dashboard := gapi.FolderDashboardSearchResponse{FolderTitle: "folder", Title: "dashboard", Type: "db"}
+func Test_yieldDashboards(t *testing.T) {
+	tests := []struct {
+		name     string
+		searcher searcher
+		fetcher  dashboardFetcher
+		want     []string
+		wantErr  assert.ErrorAssertionFunc
+	}{
+		{
+			name: "pass",
+			searcher: fakeSearcher{
+				hitList: models.HitList{{Title: "dashboard", Type: "dash-db", UID: "1"}},
+			},
+			fetcher: fakeDashboardFetcher{
+				dashboards: map[string]any{"1": "model"},
+			},
+			want:    []string{"dashboard"},
+			wantErr: assert.NoError,
+		},
+		{
+			name:     "search fails",
+			searcher: fakeSearcher{err: errors.New("some error")},
+			wantErr:  assert.Error,
+		},
+		{
+			name: "fetch fails",
+			searcher: fakeSearcher{
+				hitList: models.HitList{{Title: "dashboard", Type: "dash-db", UID: "1"}},
+			},
+			fetcher: fakeDashboardFetcher{err: errors.New("some error")},
+			wantErr: assert.Error,
+		},
+	}
 
-	var output bytes.Buffer
-	l := testutils.NewTextLogger(&output, slog.LevelInfo)
-	l.Info("dashboard found", "dashboard", folderDashboard(dashboard))
-	assert.Equal(t, `level=INFO msg="dashboard found" dashboard.title=dashboard dashboard.type=db dashboard.folder=folder
-`, output.String())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := dashboardClient{
+				searcher:         tt.searcher,
+				dashboardFetcher: tt.fetcher,
+			}
+			var dashboardNames []string
+			var yieldErr error
+			for db, err := range yieldDashboards(c, false) {
+				if err != nil {
+					yieldErr = err
+					break
+				}
+				dashboardNames = append(dashboardNames, db.Title)
+			}
+			assert.Equal(t, tt.want, dashboardNames)
+			tt.wantErr(t, yieldErr)
+		})
+	}
+}
+
+func Test_getDataSources(t *testing.T) {
+	tests := []struct {
+		name    string
+		fetcher dataSourceFetcher
+		want    []string
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "pass",
+			fetcher: fakeDataSourceFetcher{
+				dataSources: models.DataSourceList{
+					{Name: "foo"},
+					{Name: "bar"},
+				},
+			},
+			want:    []string{"foo", "bar"},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "failure",
+			fetcher: fakeDataSourceFetcher{
+				err: errors.New("some error"),
+			},
+			wantErr: assert.Error,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := dataSourcesClient{dataSourceFetcher: tt.fetcher}
+			dataSources, err := getDataSources(c)
+			var dataSourceNames []string
+			for _, dataSource := range dataSources {
+				dataSourceNames = append(dataSourceNames, dataSource.Name)
+			}
+			assert.Equal(t, tt.want, dataSourceNames)
+			tt.wantErr(t, err)
+		})
+	}
 }
