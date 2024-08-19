@@ -42,13 +42,17 @@ type Dashboard struct {
 func yieldDashboards(c dashboardClient, folders bool, args ...string) iter.Seq2[Dashboard, error] {
 	f := shouldExport(folders, args...)
 	return func(yield func(Dashboard, error) bool) {
-		ok, err := c.Search(nil)
+		dashboardType := "dash-db"
+		params := search.SearchParams{Type: &dashboardType}
+		// TODO: this only returns up to params.Limit records. Default is 1000 so should be fine.
+		// Implement paging to support more dashboards.
+		ok, err := c.Search(&params)
 		if err != nil {
 			yield(Dashboard{}, err)
 			return
 		}
 		for _, entry := range ok.GetPayload() {
-			if entry.Type != "dash-db" || !f(entry) {
+			if !f(entry) {
 				continue
 			}
 			db, err := c.GetDashboardByUID(entry.UID)
