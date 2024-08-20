@@ -41,27 +41,33 @@ type Dashboard struct {
 
 func yieldDashboards(c dashboardClient, folders bool, args ...string) iter.Seq2[Dashboard, error] {
 	f := shouldExport(folders, args...)
+	dashboardType := "dash-db"
+	params := search.SearchParams{Type: &dashboardType}
 	return func(yield func(Dashboard, error) bool) {
-		dashboardType := "dash-db"
-		params := search.SearchParams{Type: &dashboardType}
-		// TODO: this only returns up to params.Limit records. Default is 1000 so should be fine.
-		// Implement paging to support more dashboards.
-		ok, err := c.Search(&params)
-		if err != nil {
-			yield(Dashboard{}, err)
-			return
-		}
-		for _, entry := range ok.GetPayload() {
-			if !f(entry) {
-				continue
-			}
-			db, err := c.GetDashboardByUID(entry.UID)
+		var page int64
+		for page = 0; ; page++ {
+			params.Page = &page
+			ok, err := c.Search(&params)
 			if err != nil {
-				yield(Dashboard{}, fmt.Errorf("dash-db lookup for %q: %w", entry.Title, err))
+				yield(Dashboard{}, err)
 				return
 			}
-			if !yield(Dashboard{Title: entry.Title, Folder: entry.FolderTitle, Model: db.GetPayload().Dashboard}, nil) {
+			hits := ok.GetPayload()
+			if len(hits) == 0 {
 				return
+			}
+			for _, entry := range hits {
+				if !f(entry) {
+					continue
+				}
+				db, err := c.GetDashboardByUID(entry.UID)
+				if err != nil {
+					yield(Dashboard{}, fmt.Errorf("dash-db lookup for %q: %w", entry.Title, err))
+					return
+				}
+				if !yield(Dashboard{Title: entry.Title, Folder: entry.FolderTitle, Model: db.GetPayload().Dashboard}, nil) {
+					return
+				}
 			}
 		}
 	}

@@ -25,6 +25,7 @@ func TestExportDashboards(t *testing.T) {
 		name    string
 		config  func() *viper.Viper
 		args    []string
+		limit   int64
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -70,6 +71,15 @@ func TestExportDashboards(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "paged",
+			config: func() *viper.Viper {
+				v := viper.New()
+				v.Set("grafana.url", "http://grafana")
+				return v
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "invalid url",
 			config: func() *viper.Viper {
 				v := viper.New()
@@ -99,6 +109,7 @@ func TestExportDashboards(t *testing.T) {
 			}
 
 			exp.client.dashboardClient.searcher = fakeSearcher{
+				limit: tt.limit,
 				hitList: models.HitList{
 					{Title: "db 1", FolderTitle: "folder 1", Type: "dash-db", UID: "1"},
 					{Title: "db 2", FolderTitle: "folder 2", Type: "dash-db", UID: "2"},
@@ -156,15 +167,33 @@ var _ searcher = fakeSearcher{}
 
 type fakeSearcher struct {
 	hitList models.HitList
+	limit   int64
 	err     error
 }
 
-func (f fakeSearcher) Search(_ *search.SearchParams, _ ...search.ClientOption) (*search.SearchOK, error) {
+func (f fakeSearcher) Search(params *search.SearchParams, _ ...search.ClientOption) (*search.SearchOK, error) {
 	var result *search.SearchOK
-	if f.err == nil {
-		result = search.NewSearchOK()
-		result.Payload = f.hitList
+	if f.err != nil {
+		return nil, f.err
 	}
+	result = search.NewSearchOK()
+	var page int64
+	if params.Page != nil {
+		page = *params.Page
+	}
+	limit := f.limit
+	if limit == 0 {
+		limit = int64(1000)
+	}
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	start := int(page) * int(limit)
+	if start > len(f.hitList) {
+		return result, nil
+	}
+	end := max(start+int(page), len(f.hitList))
+	result.Payload = f.hitList[start:end]
 	return result, f.err
 }
 
