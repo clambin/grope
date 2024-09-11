@@ -66,8 +66,8 @@ github.com/gosimple/unidecode v1.0.1 h1:hZzFTMMqSswvf0LBJZCZgThIZrpDHFXux9KeGmn6
 github.com/gosimple/unidecode v1.0.1/go.mod h1:CP0Cr1Y1kogOtx0bJblKzsVWrqYaqfNOnHzpgWw4Awc=
 github.com/grafana/grafana-openapi-client-go v0.0.0-20240723170622-ae2c94b7c9a3 h1:W35ScJIkeyLuDlOo3F+u1JSRRvmoIYYf/ghA/17Y18Q=
 github.com/grafana/grafana-openapi-client-go v0.0.0-20240723170622-ae2c94b7c9a3/go.mod h1:hiZnMmXc9KXNUlvkV2BKFsiWuIFF/fF4wGgYWEjBitI=
-github.com/grafana/grafana-operator/v5 v5.12.0 h1:dDsTGqmXYmxDWntSwpHY58oVbcNdJLByPXxAqk0SPz0=
-github.com/grafana/grafana-operator/v5 v5.12.0/go.mod h1:fWLLGxOH3FFTepxFlNbC6gUiC4AFd2qpSrlgR3WNs4c=
+github.com/grafana/grafana-operator/v5 v5.13.0 h1:YR5E+oE4KaJr47ku2aPm3dSDYnmOCgal0n0QDAJX/F8=
+github.com/grafana/grafana-operator/v5 v5.13.0/go.mod h1:fWLLGxOH3FFTepxFlNbC6gUiC4AFd2qpSrlgR3WNs4c=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
