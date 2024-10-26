@@ -45,7 +45,7 @@ func yieldDashboards(c dashboardClient, folders bool, args ...string) iter.Seq2[
 	params := search.SearchParams{Type: &dashboardType}
 	return func(yield func(Dashboard, error) bool) {
 		var page int64
-		for page = 0; ; page++ {
+		for page = 1; ; page++ {
 			params.Page = &page
 			ok, err := c.Search(&params)
 			if err != nil {

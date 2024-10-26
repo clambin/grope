@@ -188,7 +188,7 @@ func (f fakeSearcher) Search(params *search.SearchParams, _ ...search.ClientOpti
 	if params.Limit != nil {
 		limit = *params.Limit
 	}
-	start := int(page) * int(limit)
+	start := int(page-1) * int(limit)
 	if start > len(f.hitList) {
 		return result, nil
 	}
