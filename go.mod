@@ -8,7 +8,7 @@ require (
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/gosimple/slug v1.14.0
 	github.com/grafana/grafana-openapi-client-go v0.0.0-20241018134006-9d96c2007bd8
-	github.com/grafana/grafana-operator/v5 v5.15.0
+	github.com/grafana/grafana-operator/v5 v5.15.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
