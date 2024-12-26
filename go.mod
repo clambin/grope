@@ -7,7 +7,7 @@ require (
 	github.com/clambin/go-common/set v0.4.3
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/gosimple/slug v1.15.0
-	github.com/grafana/grafana-openapi-client-go v0.0.0-20241018134006-9d96c2007bd8
+	github.com/grafana/grafana-openapi-client-go v0.0.0-20241126111151-59d2d35e24eb
 	github.com/grafana/grafana-operator/v5 v5.15.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -67,10 +67,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
