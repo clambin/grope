@@ -12,7 +12,8 @@ spec:
       dashboards: grafana
   json: |
     {
-      "foo": "bar"
+      "foo": "bar",
+      "tags": []
     }
 ---
 apiVersion: grafana.integreatly.org/v1beta1
@@ -28,5 +29,6 @@ spec:
       dashboards: grafana
   json: |
     {
-      "foo": "bar"
+      "foo": "bar",
+      "tags": []
     }

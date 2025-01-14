@@ -1,4 +1,4 @@
-package internal
+package grope
 
 import (
 	"bytes"
@@ -33,6 +33,16 @@ func TestExportDashboards(t *testing.T) {
 			config: func() *viper.Viper {
 				v := viper.New()
 				v.Set("grafana.url", "http://grafana")
+				return v
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "tagged",
+			config: func() *viper.Viper {
+				v := viper.New()
+				v.Set("grafana.url", "http://grafana")
+				v.Set("tag", "grope")
 				return v
 			},
 			wantErr: assert.NoError,
@@ -117,8 +127,8 @@ func TestExportDashboards(t *testing.T) {
 			}
 			exp.client.dashboardClient.dashboardFetcher = fakeDashboardFetcher{
 				dashboards: map[string]any{
-					"1": map[string]string{"foo": "bar"},
-					"2": map[string]string{"foo": "bar"},
+					"1": map[string]any{"foo": "bar", "tags": []any{}},
+					"2": map[string]any{"foo": "bar", "tags": []any{}},
 				},
 			}
 
@@ -233,4 +243,61 @@ func (f fakeDataSourceFetcher) GetDataSources(_ ...datasources.ClientOption) (*d
 	ok := datasources.NewGetDataSourcesOK()
 	ok.Payload = f.dataSources
 	return ok, nil
+}
+
+func Test_tagDashboard(t *testing.T) {
+	tests := []struct {
+		name    string
+		db      Dashboard
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "valid: no tags",
+			db: Dashboard{Model: map[string]any{
+				"tags": []any{},
+			}},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "valid: tags",
+			db: Dashboard{Model: map[string]any{
+				"tags": []any{"foo", "bar"},
+			}},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "valid: grope tag already exists",
+			db: Dashboard{Model: map[string]any{
+				"tags": []any{"foo", "bar", "grope"},
+			}},
+			wantErr: assert.NoError,
+		},
+		{
+			name:    "invalid: tags not present",
+			db:      Dashboard{Model: map[string]any{}},
+			wantErr: assert.Error,
+		},
+		{
+			name: "invalid: tags invalid type",
+			db: Dashboard{Model: map[string]any{
+				"tags": "foo",
+			}},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "invalid: model invalid type",
+			db:      Dashboard{Model: "124"},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tagDashboard(tt.db, "grope")
+			tt.wantErr(t, err)
+
+			if err == nil {
+				assert.Contains(t, tt.db.Model.(map[string]any)["tags"], "grope")
+			}
+		})
+	}
 }

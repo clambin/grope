@@ -1,4 +1,4 @@
-package internal
+package grope
 
 import (
 	"fmt"
@@ -50,6 +50,7 @@ func init() {
 var args = charmer.Arguments{
 	"debug":                        {Default: false, Help: "Log debug messages"},
 	"namespace":                    {Default: "default", Help: "Namespace for k8s config maps"},
+	"tag":                          {Default: "", Help: "Dashboard tag (optional)"},
 	"grafana.url":                  {Default: "http://localhost:3000", Help: "Grafana URL"},
 	"grafana.token":                {Default: "", Help: "Grafana API token (must have admin rights)"},
 	"grafana.operator.label.name":  {Default: "dashboards", Help: "label used to select the grafana instance (grafana-operator only)"},

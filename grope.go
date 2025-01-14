@@ -2,13 +2,13 @@ package main
 
 import (
 	"github.com/clambin/go-common/charmer"
-	"github.com/clambin/grope/internal"
+	"github.com/clambin/grope/internal/grope"
 	"os"
 )
 
 func main() {
-	if err := internal.RootCmd.Execute(); err != nil {
-		charmer.GetLogger(&internal.RootCmd).Error("failed to run", "err", err)
+	if err := grope.RootCmd.Execute(); err != nil {
+		charmer.GetLogger(&grope.RootCmd).Error("failed to run", "err", err)
 		os.Exit(1)
 	}
 }

@@ -3,30 +3,32 @@ apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
   name: db-1
-  namespace: default
+  namespace: application
 spec:
   allowCrossNamespaceImport: true
   folder: folder 1
   instanceSelector:
     matchLabels:
-      dashboards: grafana
+      dashboards: local-grafana
   json: |
     {
-      "foo": "bar"
+      "foo": "bar",
+      "tags": []
     }
 ---
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
   name: db-2
-  namespace: default
+  namespace: application
 spec:
   allowCrossNamespaceImport: true
   folder: folder 2
   instanceSelector:
     matchLabels:
-      dashboards: grafana
+      dashboards: local-grafana
   json: |
     {
-      "foo": "bar"
+      "foo": "bar",
+      "tags": []
     }
