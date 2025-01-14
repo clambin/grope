@@ -2,12 +2,14 @@ module github.com/clambin/grope
 
 go 1.23
 
+toolchain go1.23.4
+
 require (
 	github.com/clambin/go-common/charmer v0.2.0
 	github.com/clambin/go-common/set v0.4.3
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/gosimple/slug v1.15.0
-	github.com/grafana/grafana-openapi-client-go v0.0.0-20241126111151-59d2d35e24eb
+	github.com/grafana/grafana-openapi-client-go v0.0.0-20250108132429-8d7e1f158f65
 	github.com/grafana/grafana-operator/v5 v5.15.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0

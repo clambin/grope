@@ -12,5 +12,6 @@ spec:
       dashboards: grafana
   json: |
     {
-      "foo": "bar"
+      "foo": "bar",
+      "tags": []
     }

@@ -1,4 +1,4 @@
-package internal
+package grope
 
 import (
 	"errors"

@@ -1,7 +1,8 @@
-package internal
+package grope
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"github.com/go-openapi/strfmt"
 	goapi "github.com/grafana/grafana-openapi-client-go/client"
@@ -15,6 +16,7 @@ type exporter struct {
 	logger    *slog.Logger
 	client    *grafanaClient
 	formatter formatter
+	tag       string
 	folders   bool
 }
 
@@ -31,6 +33,7 @@ func makeExporter(v *viper.Viper, l *slog.Logger) (*exporter, error) {
 	return &exporter{
 		logger: l,
 		client: client,
+		tag:    v.GetString("tag"),
 		formatter: formatter{
 			namespace:         cmp.Or(v.GetString("namespace"), "default"),
 			grafanaLabelName:  cmp.Or(v.GetString("grafana.operator.label.name"), "dashboards"),
@@ -71,6 +74,11 @@ func (e exporter) exportDashboards(w io.Writer, args ...string) error {
 		if err != nil {
 			return fmt.Errorf("error fetching dashboard: %w", err)
 		}
+		if e.tag != "" {
+			if err = tagDashboard(dashboard, e.tag); err != nil {
+				return fmt.Errorf("error tagging dashboard: %w", err)
+			}
+		}
 		if err = e.formatter.formatDashboard(w, dashboard); err != nil {
 			return fmt.Errorf("error formating dashboard %q: %w", dashboard.Title, err)
 		}
@@ -84,4 +92,27 @@ func (e exporter) exportDataSources(w io.Writer) error {
 		err = e.formatter.formatDataSources(w, sources)
 	}
 	return err
+}
+
+func tagDashboard(db Dashboard, tag string) error {
+	jsonModel, ok := db.Model.(map[string]any)
+	if !ok {
+		return fmt.Errorf("unexpected model type: %T; expected map[string]any", db.Model)
+	}
+	tagsAny, ok := jsonModel["tags"]
+	if !ok {
+		return errors.New("dashboard does not contain tags")
+	}
+	tags, ok := tagsAny.([]any)
+	if !ok {
+		return fmt.Errorf("unexpected tags type: %T; expected []any", tagsAny)
+	}
+	for _, t := range tags {
+		if t.(string) == tag {
+			return nil
+		}
+	}
+	tags = append(tags, tag)
+	jsonModel["tags"] = tags
+	return nil
 }
