@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/gosimple/slug"
 	"github.com/grafana/grafana-openapi-client-go/models"
-	grafanav1beta1 "github.com/grafana/grafana-operator/v5/api/v1beta1"
+	"github.com/grafana/grafana-operator/v5/api/v1beta1"
 	"gopkg.in/yaml.v3"
 	"io"
 	"iter"
@@ -52,7 +52,7 @@ func (f formatter) formatDashboard(w io.Writer, dashboard Dashboard) error {
 	}
 
 	dashboardCR := grafanaOperatorCustomResource{
-		APIVersion: grafanav1beta1.GroupVersion.String(),
+		APIVersion: v1beta1.GroupVersion.String(),
 		Kind:       "GrafanaDashboard",
 		Metadata: metadata{
 			Name:      slug.Make(dashboard.Title),
@@ -91,7 +91,7 @@ func (f formatter) grafanaOperatorCustomResources(dataSources []*models.DataSour
 	return func(yield func(grafanaOperatorCustomResource) bool) {
 		for _, dataSource := range dataSources {
 			cr := grafanaOperatorCustomResource{
-				APIVersion: grafanav1beta1.GroupVersion.String(),
+				APIVersion: v1beta1.GroupVersion.String(),
 				Kind:       "GrafanaDataSource",
 				Metadata: metadata{
 					Name:      "datasource-" + slug.Make(dataSource.Name),

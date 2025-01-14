@@ -34,9 +34,9 @@ type dataSourceFetcher interface {
 type Dashboards []Dashboard
 
 type Dashboard struct {
+	Model  models.JSON
 	Folder string
 	Title  string
-	Model  models.JSON
 }
 
 func yieldDashboards(c dashboardClient, folders bool, args ...string) iter.Seq2[Dashboard, error] {
