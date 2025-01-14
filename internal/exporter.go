@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/go-openapi/strfmt"
 	goapi "github.com/grafana/grafana-openapi-client-go/client"
@@ -31,9 +32,9 @@ func makeExporter(v *viper.Viper, l *slog.Logger) (*exporter, error) {
 		logger: l,
 		client: client,
 		formatter: formatter{
-			namespace:         stringOrDefault(v.GetString("namespace"), "default"),
-			grafanaLabelName:  stringOrDefault(v.GetString("grafana.operator.label.name"), "dashboards"),
-			grafanaLabelValue: stringOrDefault(v.GetString("grafana.operator.label.value"), "grafana"),
+			namespace:         cmp.Or(v.GetString("namespace"), "default"),
+			grafanaLabelName:  cmp.Or(v.GetString("grafana.operator.label.name"), "dashboards"),
+			grafanaLabelValue: cmp.Or(v.GetString("grafana.operator.label.value"), "grafana"),
 		},
 		folders: v.GetBool("folders"),
 	}, nil
@@ -63,13 +64,6 @@ func newGrafanaClient(grafanaURL, apiKey string) (*grafanaClient, error) {
 			dataSourceFetcher: c.Datasources,
 		},
 	}, nil
-}
-
-func stringOrDefault(s, defaultString string) string {
-	if s != "" {
-		return s
-	}
-	return defaultString
 }
 
 func (e exporter) exportDashboards(w io.Writer, args ...string) error {
