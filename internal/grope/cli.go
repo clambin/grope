@@ -50,7 +50,7 @@ func init() {
 var args = charmer.Arguments{
 	"debug":                        {Default: false, Help: "Log debug messages"},
 	"namespace":                    {Default: "default", Help: "Namespace for k8s config maps"},
-	"tag":                          {Default: "", Help: "Dashboard tag (optional)"},
+	"tags":                         {Default: "", Help: "Dashboard tags (comma-separated; optional)"},
 	"grafana.url":                  {Default: "http://localhost:3000", Help: "Grafana URL"},
 	"grafana.token":                {Default: "", Help: "Grafana API token (must have admin rights)"},
 	"grafana.operator.label.name":  {Default: "dashboards", Help: "label used to select the grafana instance (grafana-operator only)"},
@@ -67,8 +67,7 @@ func initArgs() {
 	dashboardsCmd.Flags().BoolP("folders", "f", false, "Export folder")
 	_ = viper.BindPFlag("folders", dashboardsCmd.Flags().Lookup("folders"))
 
-	RootCmd.AddCommand(dashboardsCmd)
-	RootCmd.AddCommand(dataSourcesCmd)
+	RootCmd.AddCommand(dashboardsCmd, dataSourcesCmd)
 }
 
 func initConfig() {

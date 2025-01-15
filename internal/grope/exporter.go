@@ -10,13 +10,14 @@ import (
 	"io"
 	"log/slog"
 	"net/url"
+	"strings"
 )
 
 type exporter struct {
 	logger    *slog.Logger
 	client    *grafanaClient
 	formatter formatter
-	tag       string
+	tags      string
 	folders   bool
 }
 
@@ -33,7 +34,7 @@ func makeExporter(v *viper.Viper, l *slog.Logger) (*exporter, error) {
 	return &exporter{
 		logger: l,
 		client: client,
-		tag:    v.GetString("tag"),
+		tags:   v.GetString("tags"),
 		formatter: formatter{
 			namespace:         cmp.Or(v.GetString("namespace"), "default"),
 			grafanaLabelName:  cmp.Or(v.GetString("grafana.operator.label.name"), "dashboards"),
@@ -74,9 +75,11 @@ func (e exporter) exportDashboards(w io.Writer, args ...string) error {
 		if err != nil {
 			return fmt.Errorf("error fetching dashboard: %w", err)
 		}
-		if e.tag != "" {
-			if err = tagDashboard(dashboard, e.tag); err != nil {
-				return fmt.Errorf("error tagging dashboard: %w", err)
+		for _, tag := range strings.Split(e.tags, ",") {
+			if tag = strings.TrimSpace(tag); tag != "" {
+				if err = tagDashboard(dashboard, tag); err != nil {
+					return fmt.Errorf("error tagging dashboard: %w", err)
+				}
 			}
 		}
 		if err = e.formatter.formatDashboard(w, dashboard); err != nil {

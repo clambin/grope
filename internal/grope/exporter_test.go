@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -42,7 +43,7 @@ func TestExportDashboards(t *testing.T) {
 			config: func() *viper.Viper {
 				v := viper.New()
 				v.Set("grafana.url", "http://grafana")
-				v.Set("tag", "grope")
+				v.Set("tags", "grope")
 				return v
 			},
 			wantErr: assert.NoError,
@@ -111,7 +112,8 @@ func TestExportDashboards(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exp, err := makeExporter(tt.config(), slog.Default())
+			l := slog.New(slog.NewTextHandler(io.Discard, nil))
+			exp, err := makeExporter(tt.config(), l)
 			tt.wantErr(t, err)
 
 			if err != nil {
