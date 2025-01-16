@@ -1,6 +1,6 @@
 module github.com/clambin/grope
 
-go 1.23
+go 1.23.3
 
 toolchain go1.23.4
 
@@ -10,7 +10,7 @@ require (
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/gosimple/slug v1.15.0
 	github.com/grafana/grafana-openapi-client-go v0.0.0-20250108132429-8d7e1f158f65
-	github.com/grafana/grafana-operator/v5 v5.15.1
+	github.com/grafana/grafana-operator/v5 v5.16.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
@@ -73,18 +73,17 @@ require (
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/api v0.31.2 // indirect
-	k8s.io/apiextensions-apiserver v0.31.2 // indirect
-	k8s.io/apimachinery v0.31.2 // indirect
+	k8s.io/api v0.32.0 // indirect
+	k8s.io/apiextensions-apiserver v0.32.0 // indirect
+	k8s.io/apimachinery v0.32.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
-	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
-	sigs.k8s.io/controller-runtime v0.19.1 // indirect
-	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
+	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
+	sigs.k8s.io/controller-runtime v0.19.4 // indirect
+	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
