@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -32,12 +33,10 @@ not-a-valid-yaml-file
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile, err := os.CreateTemp("", "*.yaml")
-			configFilename = tmpFile.Name()
-			require.NoError(t, err)
-			_, _ = tmpFile.Write([]byte(tt.config))
-			_ = tmpFile.Close()
-			defer func() { _ = os.Remove(tmpFile.Name()) }()
+			tmpDir := t.TempDir()
+			configFilename = filepath.Join(tmpDir, "config.yaml")
+
+			require.NoError(t, os.WriteFile(configFilename, []byte(tt.config), 0644))
 
 			v := viper.New()
 			initViper(v)
