@@ -2,16 +2,14 @@ module github.com/clambin/grope
 
 go 1.24
 
-toolchain go1.24.0
-
 require (
-	github.com/clambin/go-common/charmer v0.2.0
+	github.com/clambin/go-common/charmer v0.3.0
 	github.com/clambin/go-common/set v0.5.0
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/gosimple/slug v1.15.0
 	github.com/grafana/grafana-openapi-client-go v0.0.0-20250108132429-8d7e1f158f65
 	github.com/grafana/grafana-operator/v5 v5.16.0
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -60,7 +58,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
