@@ -1,8 +1,8 @@
 package grope
 
 import (
+	"codeberg.org/clambin/go-common/set"
 	"fmt"
-	"github.com/clambin/go-common/set"
 	"github.com/grafana/grafana-openapi-client-go/client/dashboards"
 	"github.com/grafana/grafana-openapi-client-go/client/datasources"
 	"github.com/grafana/grafana-openapi-client-go/client/search"

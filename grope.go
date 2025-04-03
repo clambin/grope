@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/clambin/go-common/charmer"
+	"codeberg.org/clambin/go-common/charmer"
 	"github.com/clambin/grope/internal/grope"
 	"os"
 )
