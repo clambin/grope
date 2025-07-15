@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"flag"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/gosimple/slug"
 	"github.com/grafana/grafana-openapi-client-go/client/dashboards"
 	"github.com/grafana/grafana-openapi-client-go/client/datasources"
@@ -12,10 +17,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 var update = flag.Bool("update", false, "update golden files")
@@ -33,6 +34,16 @@ func TestExportDashboards(t *testing.T) {
 			config: func() *viper.Viper {
 				v := viper.New()
 				v.Set("grafana.url", "http://grafana")
+				return v
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "with namespace",
+			config: func() *viper.Viper {
+				v := viper.New()
+				v.Set("grafana.url", "http://grafana")
+				v.Set("namespace", "foo")
 				return v
 			},
 			wantErr: assert.NoError,

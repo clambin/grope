@@ -3,7 +3,6 @@ apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
   name: db-1
-  namespace: default
 spec:
   allowCrossNamespaceImport: true
   folder: folder 1

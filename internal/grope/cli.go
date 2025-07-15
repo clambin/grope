@@ -1,12 +1,13 @@
 package grope
 
 import (
-	"codeberg.org/clambin/go-common/charmer"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"os"
 	"runtime/debug"
+
+	"codeberg.org/clambin/go-common/charmer"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -49,7 +50,7 @@ func init() {
 
 var args = charmer.Arguments{
 	"debug":                        {Default: false, Help: "Log debug messages"},
-	"namespace":                    {Default: "default", Help: "Namespace for k8s config maps"},
+	"namespace":                    {Default: "", Help: "Namespace for k8s config maps (default: no namespace added)"},
 	"tags":                         {Default: "", Help: "Dashboard tags (comma-separated; optional)"},
 	"grafana.url":                  {Default: "http://localhost:3000", Help: "Grafana URL"},
 	"grafana.token":                {Default: "", Help: "Grafana API token (must have admin rights)"},

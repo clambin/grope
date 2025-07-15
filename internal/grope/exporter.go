@@ -4,13 +4,14 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"github.com/go-openapi/strfmt"
-	goapi "github.com/grafana/grafana-openapi-client-go/client"
-	"github.com/spf13/viper"
 	"io"
 	"log/slog"
 	"net/url"
 	"strings"
+
+	"github.com/go-openapi/strfmt"
+	goapi "github.com/grafana/grafana-openapi-client-go/client"
+	"github.com/spf13/viper"
 )
 
 type exporter struct {
@@ -36,7 +37,7 @@ func makeExporter(v *viper.Viper, l *slog.Logger) (*exporter, error) {
 		client: client,
 		tags:   v.GetString("tags"),
 		formatter: formatter{
-			namespace:         cmp.Or(v.GetString("namespace"), "default"),
+			namespace:         v.GetString("namespace"),
 			grafanaLabelName:  cmp.Or(v.GetString("grafana.operator.label.name"), "dashboards"),
 			grafanaLabelValue: cmp.Or(v.GetString("grafana.operator.label.value"), "grafana"),
 		},

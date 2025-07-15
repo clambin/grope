@@ -3,6 +3,7 @@ apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
   name: db-1
+  namespace: foo
 spec:
   allowCrossNamespaceImport: true
   folder: folder 1
@@ -12,15 +13,14 @@ spec:
   json: |
     {
       "foo": "bar",
-      "tags": [
-        "grope"
-      ]
+      "tags": []
     }
 ---
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
   name: db-2
+  namespace: foo
 spec:
   allowCrossNamespaceImport: true
   folder: folder 2
@@ -30,7 +30,5 @@ spec:
   json: |
     {
       "foo": "bar",
-      "tags": [
-        "grope"
-      ]
+      "tags": []
     }

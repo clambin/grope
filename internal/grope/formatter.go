@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"iter"
+
 	"github.com/gosimple/slug"
 	"github.com/grafana/grafana-openapi-client-go/models"
 	"github.com/grafana/grafana-operator/v5/api/v1beta1"
 	"gopkg.in/yaml.v3"
-	"io"
-	"iter"
 )
 
 type formatter struct {
@@ -28,7 +29,7 @@ type grafanaOperatorCustomResource struct {
 
 type metadata struct {
 	Name      string `yaml:"name"`
-	Namespace string `yaml:"namespace"`
+	Namespace string `yaml:"namespace,omitempty"`
 }
 
 type grafanaOperatorCustomResourceSpec struct {
