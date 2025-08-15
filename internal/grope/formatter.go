@@ -93,7 +93,7 @@ func (f formatter) grafanaOperatorCustomResources(dataSources []*models.DataSour
 		for _, dataSource := range dataSources {
 			cr := grafanaOperatorCustomResource{
 				APIVersion: v1beta1.GroupVersion.String(),
-				Kind:       "GrafanaDataSource",
+				Kind:       "GrafanaDatasource",
 				Metadata: metadata{
 					Name:      "datasource-" + slug.Make(dataSource.Name),
 					Namespace: f.namespace,
