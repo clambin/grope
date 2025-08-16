@@ -1,4 +1,4 @@
-package grope
+package main
 
 import (
 	"fmt"
@@ -12,36 +12,21 @@ import (
 
 var (
 	configFilename string
-	RootCmd        = cobra.Command{
+	rootCmd        = cobra.Command{
 		Use:   "grope",
 		Short: "exports Grafana dashboards & datasources as grafana-operator custom resources",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			charmer.SetTextLogger(cmd, viper.GetBool("debug"))
 		},
 	}
-	dashboardsCmd = &cobra.Command{
-		Use:   "dashboards [flags] [name [...]]",
-		Short: "export Grafana dashboards",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			exp, err := makeExporter(viper.GetViper(), charmer.GetLogger(cmd))
-			if err != nil {
-				return err
-			}
-			return exp.exportDashboards(os.Stdout, args...)
-		},
-	}
-	dataSourcesCmd = &cobra.Command{
-		Use:   "datasources",
-		Short: "export Grafana data sources",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			exp, err := makeExporter(viper.GetViper(), charmer.GetLogger(cmd))
-			if err != nil {
-				return err
-			}
-			return exp.exportDataSources(os.Stdout)
-		},
-	}
 )
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		charmer.GetLogger(&rootCmd).Error("failed to run", "err", err)
+		os.Exit(1)
+	}
+}
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -60,15 +45,11 @@ var args = charmer.Arguments{
 
 func initArgs() {
 	if buildInfo, ok := debug.ReadBuildInfo(); ok {
-		RootCmd.Version = buildInfo.Main.Version
+		rootCmd.Version = buildInfo.Main.Version
 	}
 
-	RootCmd.PersistentFlags().StringVarP(&configFilename, "config", "c", "", "Configuration file")
-	_ = charmer.SetPersistentFlags(&RootCmd, viper.GetViper(), args)
-	dashboardsCmd.Flags().BoolP("folders", "f", false, "Export folder")
-	_ = viper.BindPFlag("folders", dashboardsCmd.Flags().Lookup("folders"))
-
-	RootCmd.AddCommand(dashboardsCmd, dataSourcesCmd)
+	rootCmd.PersistentFlags().StringVarP(&configFilename, "config", "c", "", "Configuration file")
+	_ = charmer.SetPersistentFlags(&rootCmd, viper.GetViper(), args)
 }
 
 func initConfig() {
