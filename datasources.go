@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"iter"
 	"log/slog"
 	"os"
 	"time"
@@ -60,8 +61,24 @@ func exportDatasources(
 	return nil
 }
 
+// grafanaDataSources returns all datasources that match the names in args.
+func grafanaDataSources(c *grafanaClient, args []string, logger *slog.Logger) iter.Seq[*models.DataSource] {
+	return func(yield func(*models.DataSource) bool) {
+		for _, name := range args {
+			ds, err := c.Datasources.GetDataSourceByName(name)
+			if err != nil {
+				logger.Error("Error getting datasources", "name", name, "err", err)
+				continue
+			}
+			if !yield(ds.GetPayload()) {
+				return
+			}
+		}
+	}
+}
+
 // datasourceManifest is a stripped-down version of Grafana Operator Datasource custom resource.
-// This allows us to marshall the datasource to YAML without including the Status section.
+// This allows us to marshal the datasource to YAML without including the Status section.
 type datasourceManifest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -7,6 +7,9 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	goapi "github.com/grafana/grafana-openapi-client-go/client"
+	"github.com/grafana/grafana-openapi-client-go/client/dashboards"
+	"github.com/grafana/grafana-openapi-client-go/client/datasources"
+	"github.com/grafana/grafana-openapi-client-go/client/search"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -84,4 +87,26 @@ func (c configuration) instanceSelector() *metav1.LabelSelector {
 		return nil
 	}
 	return &metav1.LabelSelector{MatchLabels: c.Grafana.Operator.Labels}
+}
+
+type grafanaClient struct {
+	Search      grafanaSearchClient
+	Dashboards  grafanaDashboardClient
+	Datasources grafanaDatasourcesClient
+}
+
+type grafanaSearchClient interface {
+	Search(*search.SearchParams, ...search.ClientOption) (*search.SearchOK, error)
+}
+
+type grafanaDashboardClient interface {
+	GetDashboardByUID(string, ...dashboards.ClientOption) (*dashboards.GetDashboardByUIDOK, error)
+}
+
+type grafanaDatasourcesClient interface {
+	GetDataSourceByName(name string, opts ...datasources.ClientOption) (*datasources.GetDataSourceByNameOK, error)
+}
+
+func constP[T any](v T) *T {
+	return &v
 }
