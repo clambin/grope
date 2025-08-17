@@ -2,10 +2,11 @@
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
+  creationTimestamp: null
   name: db-1
-  namespace: foo
 spec:
   allowCrossNamespaceImport: true
+  contentCacheDuration: 0s
   folder: folder 1
   instanceSelector:
     matchLabels:
@@ -15,14 +16,16 @@ spec:
       "foo": "bar",
       "tags": []
     }
+  resyncPeriod: 10m0s
 ---
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
+  creationTimestamp: null
   name: db-2
-  namespace: foo
 spec:
   allowCrossNamespaceImport: true
+  contentCacheDuration: 0s
   folder: folder 2
   instanceSelector:
     matchLabels:
@@ -32,3 +35,4 @@ spec:
       "foo": "bar",
       "tags": []
     }
+  resyncPeriod: 10m0s

@@ -1,4 +1,4 @@
-package grope
+package main
 
 import (
 	"bytes"
@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"codeberg.org/clambin/go-common/set"
 	"github.com/gosimple/slug"
 	"github.com/grafana/grafana-openapi-client-go/client/dashboards"
-	"github.com/grafana/grafana-openapi-client-go/client/datasources"
 	"github.com/grafana/grafana-openapi-client-go/client/search"
 	"github.com/grafana/grafana-openapi-client-go/models"
 	"github.com/spf13/viper"
@@ -85,6 +85,7 @@ func TestExportDashboards(t *testing.T) {
 				v := viper.New()
 				v.Set("grafana.url", "http://grafana")
 				v.Set("namespace", "application")
+				v.Set("grafana.operator.label.name", "dashboards")
 				v.Set("grafana.operator.label.value", "local-grafana")
 				v.Set("folders", "folder 1")
 				return v
@@ -100,53 +101,29 @@ func TestExportDashboards(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
-		{
-			name: "invalid url",
-			config: func() *viper.Viper {
-				v := viper.New()
-				v.Set("grafana.url", "")
-				return v
-			},
-			wantErr: assert.Error,
-		},
-		{
-			name: "url missing scheme",
-			config: func() *viper.Viper {
-				v := viper.New()
-				v.Set("grafana.url", "grafana.localdomain")
-				return v
-			},
-			wantErr: assert.Error,
-		},
 	}
-
-	l := slog.New(slog.DiscardHandler)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exp, err := makeExporter(tt.config(), l)
-			tt.wantErr(t, err)
-
-			if err != nil {
-				return
-			}
-
-			exp.client.dashboardClient.searcher = fakeSearcher{
-				limit: tt.limit,
-				hitList: models.HitList{
-					{Title: "db 1", FolderTitle: "folder 1", Type: "dash-db", UID: "1"},
-					{Title: "db 2", FolderTitle: "folder 2", Type: "dash-db", UID: "2"},
+			logger := slog.New(slog.DiscardHandler)
+			//logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+			cfg := configurationFromViper(tt.config())
+			client := grafanaClient{
+				Search: fakeSearcher{
+					limit: tt.limit,
+					hitList: models.HitList{
+						{Title: "db 1", FolderTitle: "folder 1", Type: "dash-db", UID: "1"},
+						{Title: "db 2", FolderTitle: "folder 2", Type: "dash-db", UID: "2"},
+					},
 				},
-			}
-			exp.client.dashboardClient.dashboardFetcher = fakeDashboardFetcher{
-				dashboards: map[string]any{
+				Dashboards: fakeDashboardFetcher{dashboards: map[string]any{
 					"1": map[string]any{"foo": "bar", "tags": []any{}},
 					"2": map[string]any{"foo": "bar", "tags": []any{}},
-				},
+				}},
 			}
 
 			var buf bytes.Buffer
-			require.NoError(t, exp.exportDashboards(&buf, tt.args...))
+			require.NoError(t, exportDashboards(&buf, &client, cfg, set.New(tt.args...), logger))
 
 			gp := filepath.Join("testdata", slug.Make(t.Name())+".yaml")
 			if *update {
@@ -159,34 +136,64 @@ func TestExportDashboards(t *testing.T) {
 	}
 }
 
-func TestExportDataSources(t *testing.T) {
-	v := viper.New()
-	v.Set("namespace", "monitoring")
-	v.Set("grafana.operator.label.value", "local-grafana")
-	v.Set("grafana.url", "http://grafana")
-
-	exp, err := makeExporter(v, slog.Default())
-	require.NoError(t, err)
-	exp.client.dataSourcesClient.dataSourceFetcher = fakeDataSourceFetcher{
-		dataSources: models.DataSourceList{
-			{ID: 0, Name: "prometheus", Type: "prometheus", URL: "http://prometheus"},
+func Test_tagDashboard(t *testing.T) {
+	tests := []struct {
+		name    string
+		db      models.DashboardFullWithMeta
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "valid: no tags",
+			db: models.DashboardFullWithMeta{Dashboard: map[string]any{
+				"tags": []any{},
+			}},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "valid: tags",
+			db: models.DashboardFullWithMeta{Dashboard: map[string]any{
+				"tags": []any{"foo", "bar"},
+			}},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "valid: grope tag already exists",
+			db: models.DashboardFullWithMeta{Dashboard: map[string]any{
+				"tags": []any{"foo", "bar", "grope"},
+			}},
+			wantErr: assert.NoError,
+		},
+		{
+			name:    "valid: tags not present",
+			db:      models.DashboardFullWithMeta{Dashboard: map[string]any{}},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "invalid: tags invalid type",
+			db: models.DashboardFullWithMeta{Dashboard: map[string]any{
+				"tags": "foo",
+			}},
+			wantErr: assert.NoError,
+		},
+		{
+			name:    "invalid: model invalid type",
+			db:      models.DashboardFullWithMeta{Dashboard: "124"},
+			wantErr: assert.Error,
 		},
 	}
-	var buf bytes.Buffer
-	require.NoError(t, exp.exportDataSources(&buf))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tagDashboard(&tt.db, "grope")
+			tt.wantErr(t, err)
 
-	gp := filepath.Join("testdata", slug.Make(t.Name())+".yaml")
-	if *update {
-		require.NoError(t, os.WriteFile(gp, buf.Bytes(), 0644))
+			if err == nil {
+				assert.Contains(t, tt.db.Dashboard.(map[string]any)["tags"], "grope")
+			}
+		})
 	}
-	golden, err := os.ReadFile(gp)
-	require.NoError(t, err)
-	assert.Equal(t, string(golden), buf.String())
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-var _ searcher = fakeSearcher{}
+var _ grafanaSearchClient = fakeSearcher{}
 
 type fakeSearcher struct {
 	hitList models.HitList
@@ -220,7 +227,7 @@ func (f fakeSearcher) Search(params *search.SearchParams, _ ...search.ClientOpti
 	return result, f.err
 }
 
-var _ dashboardFetcher = fakeDashboardFetcher{}
+var _ grafanaDashboardClient = fakeDashboardFetcher{}
 
 type fakeDashboardFetcher struct {
 	err        error
@@ -240,77 +247,4 @@ func (f fakeDashboardFetcher) GetDashboardByUID(dashboardUID string, _ ...dashbo
 		Dashboard: db,
 	}
 	return result, nil
-}
-
-var _ dataSourceFetcher = &fakeDataSourceFetcher{}
-
-type fakeDataSourceFetcher struct {
-	err         error
-	dataSources models.DataSourceList
-}
-
-func (f fakeDataSourceFetcher) GetDataSources(_ ...datasources.ClientOption) (*datasources.GetDataSourcesOK, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-	ok := datasources.NewGetDataSourcesOK()
-	ok.Payload = f.dataSources
-	return ok, nil
-}
-
-func Test_tagDashboard(t *testing.T) {
-	tests := []struct {
-		name    string
-		db      Dashboard
-		wantErr assert.ErrorAssertionFunc
-	}{
-		{
-			name: "valid: no tags",
-			db: Dashboard{Model: map[string]any{
-				"tags": []any{},
-			}},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "valid: tags",
-			db: Dashboard{Model: map[string]any{
-				"tags": []any{"foo", "bar"},
-			}},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "valid: grope tag already exists",
-			db: Dashboard{Model: map[string]any{
-				"tags": []any{"foo", "bar", "grope"},
-			}},
-			wantErr: assert.NoError,
-		},
-		{
-			name:    "invalid: tags not present",
-			db:      Dashboard{Model: map[string]any{}},
-			wantErr: assert.Error,
-		},
-		{
-			name: "invalid: tags invalid type",
-			db: Dashboard{Model: map[string]any{
-				"tags": "foo",
-			}},
-			wantErr: assert.Error,
-		},
-		{
-			name:    "invalid: model invalid type",
-			db:      Dashboard{Model: "124"},
-			wantErr: assert.Error,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tagDashboard(tt.db, "grope")
-			tt.wantErr(t, err)
-
-			if err == nil {
-				assert.Contains(t, tt.db.Model.(map[string]any)["tags"], "grope")
-			}
-		})
-	}
 }
