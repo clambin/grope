@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"codeberg.org/clambin/go-common/charmer"
 	"codeberg.org/clambin/go-common/set"
 	"github.com/gosimple/slug"
 	"github.com/grafana/grafana-openapi-client-go/client/search"
@@ -31,8 +32,7 @@ var (
 			if err != nil {
 				return fmt.Errorf("grafana: %w", err)
 			}
-			logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-			return exportDashboards(os.Stdout, client, cfg, set.New(args...), logger)
+			return exportDashboards(os.Stdout, client, cfg, set.New(args...), charmer.GetLogger(cmd))
 		},
 	}
 )

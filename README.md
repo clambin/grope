@@ -5,4 +5,4 @@
 [![go report card](https://goreportcard.com/badge/github.com/clambin/grope)](https://goreportcard.com/report/github.com/clambin/grope)
 [![license](https://img.shields.io/github/license/clambin/grope?style=plastic)](LICENSE.md)
 
-create Grafana Operator custom resources from a live Grafana instance.
+Create Grafana Operator custom resources from a live Grafana instance.

@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"codeberg.org/clambin/go-common/charmer"
 	"github.com/gosimple/slug"
 	"github.com/grafana/grafana-openapi-client-go/models"
 	"github.com/grafana/grafana-operator/v5/api/v1beta1"
@@ -28,8 +29,7 @@ var (
 			if err != nil {
 				return fmt.Errorf("grafana: %w", err)
 			}
-			logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-			return exportDatasources(os.Stdout, client, cfg, args, logger)
+			return exportDatasources(os.Stdout, client, cfg, args, charmer.GetLogger(cmd))
 		},
 	}
 )
@@ -45,6 +45,7 @@ func exportDatasources(
 	args []string,
 	logger *slog.Logger,
 ) error {
+
 	for datasource := range grafanaDataSources(client, args, logger) {
 		if len(datasource.SecureJSONFields) > 0 {
 			logger.Warn("datasource uses secure JSON fields and requires manual changes. See https://grafana.github.io/grafana-operator/docs/datasources/", "datasource", datasource.Name)

@@ -49,7 +49,7 @@ func TestExportDataSources(t *testing.T) {
 var _ grafanaDatasourcesClient = &fakeDataSourceFetcher{}
 
 type fakeDataSourceFetcher struct {
-	err         error
+	//err         error
 	dataSources map[string]*models.DataSource
 }
 

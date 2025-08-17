@@ -39,8 +39,8 @@ var args = charmer.Arguments{
 	"tags":                         {Default: "", Help: "Dashboard tags (comma-separated; optional)"},
 	"grafana.url":                  {Default: "http://localhost:3000", Help: "Grafana URL"},
 	"grafana.token":                {Default: "", Help: "Grafana API token (must have admin rights)"},
-	"grafana.operator.label.name":  {Default: "dashboards", Help: "label used to select the grafana instance (grafana-operator only)"},
-	"grafana.operator.label.value": {Default: "grafana", Help: "label value used to select the grafana instance (grafana-operator only)"},
+	"grafana.operator.label.name":  {Default: "dashboards", Help: "label used to select the grafana instance"},
+	"grafana.operator.label.value": {Default: "grafana", Help: "label value used to select the grafana instance"},
 }
 
 func initArgs() {
