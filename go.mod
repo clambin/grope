@@ -3,7 +3,7 @@ module github.com/clambin/grope
 go 1.25
 
 require (
-	codeberg.org/clambin/go-common/charmer v0.3.1
+	codeberg.org/clambin/go-common/charmer v0.4.0
 	codeberg.org/clambin/go-common/set v0.6.0
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/gosimple/slug v1.15.0
