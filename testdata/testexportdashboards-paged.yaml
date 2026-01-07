@@ -2,7 +2,6 @@
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
-  creationTimestamp: null
   name: db-1
 spec:
   allowCrossNamespaceImport: true
@@ -21,7 +20,6 @@ spec:
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
-  creationTimestamp: null
   name: db-2
 spec:
   allowCrossNamespaceImport: true

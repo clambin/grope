@@ -2,7 +2,6 @@
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
-  creationTimestamp: null
   name: db-1
   namespace: foo
 spec:
@@ -22,7 +21,6 @@ spec:
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
-  creationTimestamp: null
   name: db-2
   namespace: foo
 spec:
