@@ -82,8 +82,8 @@ func grafanaDataSources(c *grafanaClient, args []string, logger *slog.Logger) it
 // This allows us to marshal the datasource to YAML without including the Status section.
 type datasourceManifest struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              v1beta1.GrafanaDatasourceSpec `json:"spec,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              v1beta1.GrafanaDatasourceSpec `json:"spec"`
 }
 
 func operatorDatasource(cfg configuration, datasource *models.DataSource) datasourceManifest {
@@ -93,7 +93,7 @@ func operatorDatasource(cfg configuration, datasource *models.DataSource) dataso
 	}
 	return datasourceManifest{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1beta1.GroupVersion.String(),
+			APIVersion: v1beta1.SchemeGroupVersion.String(),
 			Kind:       "GrafanaDatasource",
 		},
 		ObjectMeta: metav1.ObjectMeta{

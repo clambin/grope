@@ -108,8 +108,8 @@ func grafanaDashboards(c *grafanaClient, folders bool, args set.Set[string], log
 // This allows us to marshal the dashboard to YAML without including the Status section.
 type dashboardManifest struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              v1beta1.GrafanaDashboardSpec `json:"spec,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              v1beta1.GrafanaDashboardSpec `json:"spec"`
 }
 
 func operatorDashboard(cfg configuration, entry *models.Hit, dashboard *models.DashboardFullWithMeta) (dashboardManifest, error) {
@@ -126,7 +126,7 @@ func operatorDashboard(cfg configuration, entry *models.Hit, dashboard *models.D
 
 	return dashboardManifest{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1beta1.GroupVersion.String(),
+			APIVersion: v1beta1.SchemeGroupVersion.String(),
 			Kind:       "GrafanaDashboard",
 		},
 		ObjectMeta: metav1.ObjectMeta{
